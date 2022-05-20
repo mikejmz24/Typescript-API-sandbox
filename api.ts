@@ -8,18 +8,24 @@ interface User {
 let Users: User[] = [];
 let id: number = 1;
 
+export function ViewUsers(): User[] {
+    return Users;
+}
+
 export function CreateUser(firstName: string, lastName: string, age: number): User {
-    let newUser = {
+    const newUser: User = {
         id: id,
         firstName: firstName,
         lastName: lastName,
         age: age
     };
     Users.push(newUser);
-    id++
+    id++;
     return newUser;
 }
 
-export function sum(x: number, y:number): number {
-    return x + y;
+export function ClearUsers(): boolean {
+    Users = [];
+    id = 1;
+    return true;
 }
