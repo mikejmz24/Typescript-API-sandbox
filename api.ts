@@ -1,9 +1,9 @@
-interface User {
+export interface User {
 	id: number;
 	firstName: string;
 	lastName: string;
-	age: number;
-};
+	birthDate: Date;
+}
 
 let Users: User[] = [];
 let id: number = 1;
@@ -11,30 +11,42 @@ let id: number = 1;
 export function CreateUser(
 	firstName: string,
 	lastName: string,
-	age: number
+	birthDate: Date
 ): User {
 	const newUser: User = {
 		id: id,
 		firstName: firstName,
 		lastName: lastName,
-		age: age,
+		birthDate: birthDate,
 	};
+	if (
+		validateNameString(newUser.firstName) ||
+		validateNameString(newUser.lastName)
+	) {
+		throw new Error(
+			"User cannot be created with invalid parameters. Please provide first name, last name & date of birth"
+		);
+	}
 	Users.push(newUser);
 	id++;
 	return newUser;
-};
+}
+
+function validateNameString(str: string): boolean {
+	return !/^[a-zA-Z\s]+$/.test(str);
+}
 
 export function ViewUsers(): User[] {
 	return Users;
-};
+}
 
-export function FindUser(searchParam: string, query: string): User[] {
+export function FindUser(searchParam: string, query: string | User): User[] {
 	try {
 		return Param[searchParam](query);
 	} catch (err) {
 		throw new Error(`${searchParam} is not a valid search parameter`);
 	}
-};
+}
 
 const Param = {
 	id: (id: number) => {
@@ -57,20 +69,59 @@ const Param = {
 			return user.firstName + " " + user.lastName == fullName;
 		});
 	},
-	age: (age: number) => {
+	birthDate: (birthDate: Date) => {
 		return Users.filter((user) => {
-			return user.age == +age;
+			return user.birthDate == birthDate;
 		});
 	},
+	// exactMatch: (userObject: User) => {
+	// 	return Users.filter((user) => {
+	// 		return (
+	// 			user.id == userObject.id &&
+	// 			user.firstName == userObject.firstName &&
+	// 			user.lastName == userObject.lastName &&
+	// 			user.birthDate == userObject.birthDate
+	// 		);
+	// 	});
+	// },
 };
 
-// export function UpdateUser(id: number, params: string[], updates: string[]): User {
-// 	let user = FindUser("id", id.toString());
-// 	Object.keys(user)
-// }
+export function UpdateUser(oldUsers: User[], newUsers: User[]): User[] {
+	oldUsers.forEach((value, index) => {
+		value.firstName = newUsers[index].firstName;
+		value.lastName = newUsers[index].lastName;
+		value.birthDate = newUsers[index].birthDate;
+	});
+	return oldUsers;
+	// oldUsers.forEach((value, index) => {
+	// 	if (FindUser("exactMatch", value).length < 1) {
+	// 		return [];
+	// 	} else if (newUsers.length < 1) {
+	// 		return [];
+	// 	}
+	// 	value.firstName = newUsers[index].firstName;
+	// 	value.lastName = newUsers[index].lastName;
+	// 	value.birthDate = newUsers[index].birthDate;
+	// });
+	// return oldUsers;
+}
+
+export function DeleteUser(usersToDelete: User[]): User[] {
+	const deletedUsers: User[] = [];
+	usersToDelete.forEach((value) => {
+		const indexToDelete: number = Users.findIndex((object) => {
+			return object.id == value.id;
+		});
+		if (indexToDelete != 1) {
+			Users.splice(indexToDelete, 1);
+			deletedUsers.push(value);
+		}
+	});
+	return deletedUsers;
+}
 
 export function ClearUsers(): boolean {
 	Users = [];
 	id = 1;
 	return true;
-};
+}
