@@ -42,7 +42,7 @@ describe("CreateUser creates users, adds them to the Users array and returns the
 		expect(() => {
 			CreateUser(testUser1.toString(), "name", DT_TrainOfThought);
 		}).toThrowError(
-			"User cannot be created with invalid parameters. Please provide first name, last name & date of birth"
+			"User cannot be created with invalid parameters. Please provide a valid first name, last name & date of birth"
 		);
 	});
 });
@@ -228,6 +228,7 @@ describe("FindUser searches Users array and returns all Users whose criteria mat
 	});
 });
 
+// TODO: review testing for transactions, or consider executing individual tasks
 describe("UpdateUser modifies Users' data and returns their updated User data", () => {
 	beforeAll(() => {
 		ClearUsers();
@@ -238,25 +239,88 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 		oldData = [];
 		newData = [];
 	});
-	it("Should return an empty array if no User data is provided to update", () => {
+	it("Should return an empty array if no old or new User data is provided to update", () => {
 		expect(UpdateUser(oldData, newData)).toEqual([]);
 	});
-	// it("Should return an empty array if the old User data provided does not exist in the Users array", () => {
-	// 	oldData = [
-	// 		{
-	// 			id: 1,
-	// 			firstName: "Pappy",
-	// 			lastName: "Van Winkle",
-	// 			birthDate: DT_TrainOfThought,
-	// 		},
-	// 	];
-	// 	expect(UpdateUser(oldData, newData)).toEqual([]);
-	// });
+	it("Should return an empty array if no old User data is provided", () => {
+		newData = [
+			{
+				id: 1,
+				firstName: "Macallan",
+				lastName: "Eighteen years old",
+				birthDate: DM_WorldMisanthropy,
+			},
+		];
+		expect(UpdateUser(oldData, newData)).toEqual([]);
+	});
+	it("Should return an empty array if no new User data is provided", () => {
+		CreateUser("Pappy", "Van Winkle II", Epica_ThePhantomAgony);
+		expect(UpdateUser(oldData, newData)).toEqual([]);
+	});
+	it("Should return an empty array if the old User data provided does not exist in the Users array", () => {
+		oldData = [
+			{
+				id: 2,
+				firstName: "Pappy",
+				lastName: "Van Winkle",
+				birthDate: DT_TrainOfThought,
+			},
+		];
+		expect(UpdateUser(oldData, newData)).toEqual([]);
+	});
+	it("Should return an error if the new User data contains invalid first name parameters", () => {
+		oldData.push(CreateUser("Captain", "Morgan", SX_Odyssey));
+		newData = [
+			{
+				id: 3,
+				firstName: "Le Capitaine$#",
+				lastName: "Morgan",
+				birthDate: Epica_ThePhantomAgony,
+			},
+		];
+		expect(() => {
+			UpdateUser(oldData, newData);
+		}).toThrowError(
+			"User cannot be updated with invalid parameters. Please provide a valid first name, last name & date of birth"
+		);
+	});
+	it("Should return an error if the new User data contains invalid last name parameters", () => {
+		oldData.push(CreateUser("Captain", "Morgan", SX_Odyssey));
+		newData = [
+			{
+				id: 3,
+				firstName: "Le Capitaine",
+				lastName: "M. Morgan!",
+				birthDate: Epica_ThePhantomAgony,
+			},
+		];
+		expect(() => {
+			UpdateUser(oldData, newData);
+		}).toThrowError(
+			"User cannot be updated with invalid parameters. Please provide a valid first name, last name & date of birth"
+		);
+	});
+	it("Should return an error if the new User data contains invalid birth date parameters", () => {
+		oldData.push(CreateUser("Captain", "Morgan", SX_Odyssey));
+		newData = [
+			{
+				id: 3,
+				firstName: "Le Capitaine",
+				lastName: "Morgan",
+				birthDate: new Date("foo"),
+			},
+		];
+		expect(() => {
+			UpdateUser(oldData, newData);
+		}).toThrowError(
+			"User cannot be updated with invalid parameters. Please provide a valid first name, last name & date of birth"
+		);
+	});
 	it("Should change User Jack Daniels' birthDate from November 11, 2003 to November 5, 2002 and return its updated User object", () => {
 		oldData.push(CreateUser("Jack", "Daniels", DT_TrainOfThought));
 		newData = [
 			{
-				id: 1,
+				id: 5,
 				firstName: "Jack",
 				lastName: "Daniels",
 				birthDate: SX_Odyssey,
@@ -270,19 +334,19 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 		oldData.push(CreateUser("Johnny", "Walker Blue", SX_Odyssey));
 		newData = [
 			{
-				id: 2,
+				id: 6,
 				firstName: "Johnnie",
 				lastName: "Walker Black",
 				birthDate: DT_TrainOfThought,
 			},
 			{
-				id: 3,
+				id: 7,
 				firstName: "Johnnie",
 				lastName: "Walker Green",
 				birthDate: Kamelot_Epica,
 			},
 			{
-				id: 4,
+				id: 8,
 				firstName: "Johnnie",
 				lastName: "Walker Blue",
 				birthDate: SX_Odyssey,
@@ -294,7 +358,7 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 		oldData.push(CreateUser("Bacardi", "Limon", DT_TrainOfThought));
 		newData = [
 			{
-				id: 5,
+				id: 9,
 				firstName: "Bacardi",
 				lastName: "Blanco",
 				birthDate: DT_TrainOfThought,
@@ -306,12 +370,85 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 	});
 });
 
+// TODO: review testing for transactions, or consider executing individual tasks
 describe("DeleteUser removes Users from the Users array and returns the deleted Users's data", () => {
 	beforeAll(() => {
 		ClearUsers();
 	});
 	it("Should return an empty array when User with full name Courvoisier VSOP is not found", () => {
 		expect(DeleteUser(FindUser("fullName", "Courvosier VSOP"))).toEqual([]);
+	});
+	it("Should return an error when the user to be deleted contains an invalid first name", () => {
+		const testUser10: User[] = [
+			{
+				id: 1,
+				firstName: "Remy –",
+				lastName: "Martin",
+				birthDate: DT_TrainOfThought,
+			},
+		];
+		expect(() => {
+			DeleteUser(testUser10);
+		}).toThrowError(
+			"User cannot be deleted with invalid parameters. Please provide a valid first name, last name & date of birth"
+		);
+	});
+	it("Should return an error when the user to be deleted contains an invalid last name", () => {
+		const testUser11: User[] = [
+			{
+				id: 2,
+				firstName: "Remy",
+				lastName: "Martin!",
+				birthDate: DT_TrainOfThought,
+			},
+		];
+		expect(() => {
+			DeleteUser(testUser11);
+		}).toThrowError(
+			"User cannot be deleted with invalid parameters. Please provide a valid first name, last name & date of birth"
+		);
+	});
+	it("Should return an error when the user to be deleted contains an invalid last name", () => {
+		const testUser12: User[] = [
+			{
+				id: 3,
+				firstName: "Remy",
+				lastName: "Martin",
+				birthDate: new Date("I like turtles"),
+			},
+		];
+		expect(() => {
+			DeleteUser(testUser12);
+		}).toThrowError(
+			"User cannot be deleted with invalid parameters. Please provide a valid first name, last name & date of birth"
+		);
+	});
+	it("Should return an error when the third user to be deleted contains an invalid last name", () => {
+		const testUser13: User[] = [
+			{
+				id: 4,
+				firstName: "Dom",
+				lastName: "Perignon",
+				birthDate: SX_Odyssey,
+			},
+			{
+				id: 5,
+				firstName: "Glen",
+				lastName: "Moray",
+				birthDate: Epica_ThePhantomAgony,
+			},
+			{
+				id: 6,
+				firstName: "Bunnahabhain",
+				lastName: "& Glenfiddich",
+				birthDate: Kamelot_Epica,
+			},
+		];
+		expect(() => {
+			DeleteUser(testUser13);
+		}).toThrowError(
+			"User cannot be deleted with invalid parameters. Please provide a valid first name, last name & date of birth"
+		);
 	});
 	it("Should delete User Jack Daniels when searching by its date of birth June 5th, 2003", () => {
 		const testUser1 = {
