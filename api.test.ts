@@ -6,6 +6,8 @@ import {
 	FindUser,
 	UpdateUser,
 	DeleteUser,
+	DeleteUsersBulk,
+	bulkResults,
 } from "./api";
 
 const DT_TrainOfThought: Date = new Date("2003-11-11");
@@ -487,6 +489,81 @@ describe("DeleteUser removes Users from the Users array and returns the deleted 
 		CreateUser("Jim", "Bean", DT_TrainOfThought);
 		DeleteUser(FindUser("fullName", "Jim Bean"));
 		expect(ViewUsers()).toEqual([testUser2, testUser3, testUser4]);
+	});
+});
+
+describe("DeleteUsersBulk deletes a group of Users from the Users array and returns a message with the number of success and failed operations including the Users' data", () => {
+	beforeAll(() => {
+		ClearUsers();
+	});
+	// it("Should return a message that no Users could be deleted when there are no valid users to delete", () => {
+	// 	const testUser14: User[] = [{
+	// 		id: 0,
+	// 		firstName: "Don",
+	// 		lastName: "Julio",
+	// 		birthDate: DM_WorldMisanthropy,
+	// 	}];
+	// 	const results2: bulkResults = {
+	// 		success: [{}],
+	// 		failed: [{}],
+	// 		message: 
+	// 		`Successfully deleted 0 Users with 0 failed delete operations. 
+	// No Users were deleted.
+	// Make sure Users exists or correct parameters are provided.`,
+	// 	};
+	// });
+	it("Should successfully delete Users Jack Daniels & Jim Bean bur fail to delete non-existing User Jose Cuervo while returning their data", () => {
+		const testUser15: User[] = [
+			{
+				id: 1,
+				firstName: "Jack",
+				lastName: "Daniels",
+				birthDate: Epica_ThePhantomAgony,
+			},
+			{
+				id: 2,
+				firstName: "Jim",
+				lastName: "Bean",
+				birthDate: DM_WorldMisanthropy,
+			},
+			{
+				id: 0,
+				firstName: "Jose",
+				lastName: "Cuervo",
+				birthDate: Kamelot_Epica,
+			},
+		];
+		const results1: bulkResults = {
+			success: [
+				{
+					id: 1,
+					firstName: "Jack",
+					lastName: "Daniels",
+					birthDate: Epica_ThePhantomAgony,
+				},
+				{
+					id: 2,
+					firstName: "Jim",
+					lastName: "Bean",
+					birthDate: DM_WorldMisanthropy,
+				},
+			],
+			failed: [
+				{
+					id: 0,
+					firstName: "Jose",
+					lastName: "Cuervo",
+					birthDate: Kamelot_Epica,
+				},
+			],
+			message: 
+			`Successfully deleted 2 Users with 1 failed delete operation. 
+	Users Jack Daniels & Jim Bean were deleted.
+	User Jose Cuervo could not be deleted. Make sure User exists or correct parameters are provided.`,
+		};
+		CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
+		CreateUser("Jim", "Bean", DM_WorldMisanthropy);
+		expect(DeleteUsersBulk(testUser15)).toEqual(results1);
 	});
 });
 
