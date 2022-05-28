@@ -34,7 +34,7 @@ describe("CreateUser creates users, adds them to the Users array and returns the
 		CreateUser("Jim", "Bean", Kamelot_Epica);
 		expect(Users[0].id).not.toBe(Users[1].id);
 	});
-	it("Should return an error when an invalid parameter is enter such as an object", () => {
+	it("Should return an error when an invalid parameter like an object is provided", () => {
 		const testUser1: User = {
 			id: 1,
 			firstName: "Jack",
@@ -410,7 +410,7 @@ describe("DeleteUser removes Users from the Users array and returns the deleted 
 			"User cannot be deleted with invalid parameters. Please provide a valid first name, last name & date of birth"
 		);
 	});
-	it("Should return an error when the user to be deleted contains an invalid last name", () => {
+	it("Should return an error when the user to be deleted contains an invalid date of birth", () => {
 		const testUser12: User[] = [
 			{
 				id: 3,
@@ -496,23 +496,103 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 	beforeAll(() => {
 		ClearUsers();
 	});
-	// it("Should return a message that no Users could be deleted when there are no valid users to delete", () => {
-	// 	const testUser14: User[] = [{
-	// 		id: 0,
-	// 		firstName: "Don",
-	// 		lastName: "Julio",
-	// 		birthDate: DM_WorldMisanthropy,
-	// 	}];
-	// 	const results2: bulkResults = {
-	// 		success: [{}],
-	// 		failed: [{}],
-	// 		message: 
-	// 		`Successfully deleted 0 Users with 0 failed delete operations. 
-	// No Users were deleted.
-	// Make sure Users exists or correct parameters are provided.`,
+	// // TODO: Review a way to to handle missed bulk operations or how to return more descriptive messages.
+	// it("Should return a message that no Users could be deleted when User with full name Courvoisier VSOP is not found", () => {
+	// 	const testUser: User[] = FindUser("fullName", "Courvoisier VSOP");
+	// 	const results: bulkResults = {
+	// 		success: [],
+	// 		failed: testUser,
+	// 		message:
+	// 			"Successfully deleted 0 Users with 0 failed delete operations.\n" +
+	// 			"No Users were deleted.\n" +
+	// 			"User Courvoisier VSOP could not be deleted. Make sure User exists or correct parameters are provided.",
 	// 	};
+	// 	expect(DeleteUsersBulk(testUser)).toEqual(results);
 	// });
-	it("Should successfully delete Users Jack Daniels & Jim Bean bur fail to delete non-existing User Jose Cuervo while returning their data", () => {
+	it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid first name", () => {
+		const testUser: User[] = [
+			{
+				id: 1,
+				firstName: "Remy –",
+				lastName: "Martin",
+				birthDate: DT_TrainOfThought,
+			},
+		];
+		const results: bulkResults = {
+			success: [],
+			failed: testUser,
+			message:
+				"Successfully deleted 0 Users with 1 failed delete operation.\n" +
+				"No Users were deleted.\n" +
+				"User Remy – Martin could not be deleted. Make sure User exists or correct parameters are provided.",
+		};
+		expect(DeleteUsersBulk(testUser)).toEqual(results);
+	});
+	it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid last name", () => {
+		const testUser: User[] = [
+			{
+				id: 2,
+				firstName: "Remy",
+				lastName: "Martin!",
+				birthDate: DT_TrainOfThought,
+			},
+		];
+		const results: bulkResults = {
+			success: [],
+			failed: testUser,
+			message:
+				"Successfully deleted 0 Users with 1 failed delete operation.\n" +
+				"No Users were deleted.\n" +
+				"User Remy Martin! could not be deleted. Make sure User exists or correct parameters are provided.",
+		};
+		expect(DeleteUsersBulk(testUser)).toEqual(results);
+	});
+	it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid date of birth", () => {
+		const testUser: User[] = [
+			{
+				id: 3,
+                firstName: "Remy",
+                lastName: "Martin",
+                birthDate: new Date("I like turtles"),
+			},
+		];
+		const results: bulkResults = {
+			success: [],
+			failed: testUser,
+			message:
+				"Successfully deleted 0 Users with 1 failed delete operation.\n" +
+				"No Users were deleted.\n" +
+				"User Remy Martin could not be deleted. Make sure User exists or correct parameters are provided.",
+		};
+		expect(DeleteUsersBulk(testUser)).toEqual(results);
+	});
+	it("Should return a message that no Users could be deleted when there are no valid users to delete", () => {
+		const testUser14: User[] = [
+			{
+				id: 0,
+				firstName: "Don",
+				lastName: "Julio",
+				birthDate: DM_WorldMisanthropy,
+			},
+		];
+		const results2: bulkResults = {
+			success: [],
+			failed: [
+				{
+					id: 0,
+					firstName: "Don",
+					lastName: "Julio",
+					birthDate: DM_WorldMisanthropy,
+				},
+			],
+			message:
+				"Successfully deleted 0 Users with 1 failed delete operation.\n" +
+				"No Users were deleted.\n" +
+				"User Don Julio could not be deleted. Make sure User exists or correct parameters are provided.",
+		};
+		expect(DeleteUsersBulk(testUser14)).toEqual(results2);
+	});
+	it("Should successfully delete Users Jack Daniels & Jim Bean but fail to delete non-existing User Jose Cuervo while returning their data", () => {
 		const testUser15: User[] = [
 			{
 				id: 1,
@@ -556,10 +636,10 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 					birthDate: Kamelot_Epica,
 				},
 			],
-			message: 
-			`Successfully deleted 2 Users with 1 failed delete operation. 
-	Users Jack Daniels & Jim Bean were deleted.
-	User Jose Cuervo could not be deleted. Make sure User exists or correct parameters are provided.`,
+			message:
+				"Successfully deleted 2 Users with 1 failed delete operation.\n" +
+				"Users Jack Daniels & Jim Bean were deleted.\n" +
+				"User Jose Cuervo could not be deleted. Make sure User exists or correct parameters are provided.",
 		};
 		CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
 		CreateUser("Jim", "Bean", DM_WorldMisanthropy);

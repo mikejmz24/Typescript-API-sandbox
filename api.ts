@@ -91,7 +91,6 @@ export function UpdateUser(oldUsers: User[], newUsers: User[]): User[] {
 	return oldUsers;
 }
 
-// TODO: Consider implementing transactions or individual tasks. Current behavior does valid tasks but returns error if one failed.
 export function DeleteUser(usersToDelete: User[]): User[] {
 	const deletedUsers: User[] = [];
 	usersToDelete.forEach((value: User) => {
@@ -126,29 +125,51 @@ export function DeleteUsersBulk(usersToDelete: User[]): bulkResults {
 			}
 		}
 	});
-	res.message = formatBulkMessage(res);
+	res.message = formatBulkMessage(res, "deleted");
 	return res;
 }
 
-function formatBulkMessage(res: bulkResults): string {
+function formatBulkMessage(res: bulkResults, operation: string): string {
 	const successNum: number = res.success.length;
 	const failNum: number = res.failed.length;
-	const successUsersPronoun: string = numberOfUsers(successNum);
-	const failUsersPronoun: string = numberOfUsers(failNum);
+	const successPlural: string = successNum != 1 ? "s" : "";
+	const failPlural: string = failNum != 1 ? "s" : "";
+	const successUsersPrePronoun: string =
+		successNum === 0 ? "No" : successNum != 1 ? "Users" : "User";
+	const successUserFullNames: string = usersFullName(res.success);
+	const successUserFinalPronoun: string = successNum != 1 ? "were" : "was";
+	const failUserFullNames: string = usersFullName(res.failed);
 
-	return (res.message = `Successfully deleted ${successNum} ${successUsersPronoun} with ${failNum} failed delete ${
-		failNum != 1 ? "operations" : "operation"
-	}. 
-	${successNum === 0 ? "No" : successUsersPronoun} ${usersFullName(res.success)} ${
-		successNum != 1 ? "were" : "was"
-	} deleted.
-	${failUsersPronoun} ${usersFullName(
-		res.failed
-	)} could not be deleted. Make sure ${failUsersPronoun} exists or correct parameters are provided.`);
-}
-
-function numberOfUsers(users: number): string {
-	return users != 1 ? "Users" : "User";
+	return (res.message =
+		"Successfully " +
+		operation +
+		" " +
+		successNum +
+		" User" +
+		successPlural +
+		" with " +
+		failNum +
+		" failed delete operation" +
+		failPlural +
+		".\n" +
+		successUsersPrePronoun +
+		" " +
+		successUserFullNames +
+		" " +
+		successUserFinalPronoun +
+		" " +
+		operation +
+		"." +
+		"\n" +
+		"User" +
+		failPlural +
+		" " +
+		failUserFullNames +
+		" could not be " +
+		operation +
+		". Make sure User" +
+		failPlural +
+		" exists or correct parameters are provided.");
 }
 
 function usersFullName(user: User[]): string {
@@ -177,11 +198,7 @@ function validateDate(date: Date): boolean {
 }
 
 function validateUserStringFormat(user: User, operation: string): boolean {
-	if (
-		!validateNameString(user.firstName) ||
-		!validateNameString(user.lastName) ||
-		!validateDate(user.birthDate)
-	) {
+	if (!validateUsers(user)) {
 		throw new Error(
 			`User cannot be ${operation} with invalid parameters. Please provide a valid first name, last name & date of birth`
 		);
@@ -191,8 +208,8 @@ function validateUserStringFormat(user: User, operation: string): boolean {
 
 function validateUsers(user: User): boolean {
 	return (
-		validateNameString(user.firstName) ||
-		validateNameString(user.lastName) ||
+		validateNameString(user.firstName) &&
+		validateNameString(user.lastName) &&
 		validateDate(user.birthDate)
 	);
 }
