@@ -11,6 +11,11 @@ export interface bulkResults {
 	message: string;
 }
 
+export interface Query {
+	params: string;
+	query: string;
+}
+
 let Users: User[] = [];
 let id: number = 1;
 
@@ -35,17 +40,20 @@ export function ViewUsers(): User[] {
 	return Users;
 }
 
-export function FindUser(searchParam: string, query: string): User[] {
+export function FindUser(query: Query): User[] {
 	try {
-		return Param[searchParam](query);
+		if(isUserArrayEmpty(Users)) {
+			throw new Error("There are no registered Users!");
+		}
+		return Param[query.params](query.query);
 	} catch (err) {
-		throw new Error(`${searchParam} is not a valid search parameter`);
+		throw new Error(`${query.params} is not a valid search parameter`);
 	}
 }
 
-const Param = {
-	id: (id: number) => {
-		return [Users.find((user: User) => user.id == +id)];
+const Param: { [key: string]: any } = {
+	id: (id: string) => {
+		return [Users.find((user: User) => user.id.toString() == id)];
 	},
 	firstName: (firstName: string) => {
 		return Users.filter((user: User) => {
@@ -69,6 +77,10 @@ const Param = {
 	},
 };
 
+function isUserArrayEmpty(users: User[]): boolean {
+	return (users === undefined || users === null);
+}
+
 // TODO: Consider implementing transactions or individual tasks. Current behavior does valid tasks but returns error if one failed.
 export function UpdateUser(oldUsers: User[], newUsers: User[]): User[] {
 	const foundUsers: User[] = [];
@@ -91,42 +103,92 @@ export function UpdateUser(oldUsers: User[], newUsers: User[]): User[] {
 	return oldUsers;
 }
 
-export function DeleteUser(usersToDelete: User[]): User[] {
+export function DeleteUser(users: User[]): User[] {
 	const deletedUsers: User[] = [];
-	usersToDelete.forEach((value: User) => {
+	users.forEach((value: User) => {
 		validateUserStringFormat(value, "deleted");
-		const indexToDelete: number = Users.findIndex((object) => {
+		const index: number = Users.findIndex((object) => {
 			return object.id == value.id;
 		});
-		if (indexToDelete != 1) {
-			Users.splice(indexToDelete, 1);
+		if (index != 1) {
+			Users.splice(index, 1);
 			deletedUsers.push(value);
 		}
 	});
 	return deletedUsers;
 }
 
-export function DeleteUsersBulk(usersToDelete: User[]): bulkResults {
-	const res: bulkResults = {
+export function BulkOperation(
+	operation: string,
+	query: Query,
+	users: User[]
+): bulkResults {
+	try {
+		if (query === undefined && users === undefined) {
+			throw new Error(
+				`${operation} cannot be completed. Please provide valid parameters.`
+			);
+		}
+		return Operation[operation](query, users);
+	} catch (err) {
+		throw new Error(`${operation} is not a valid Bulk operation.
+		${err.message}`);
+	}
+}
+
+const Operation: { [key: string]: any } = {
+	delete: (query: Query, users: User[]) => {
+		return DeleteUsersBulk(query, users);
+	},
+};
+
+export function DeleteUsersBulk(query: Query, users: User[]): bulkResults {
+	let res: bulkResults = {
 		success: [],
 		failed: [],
 		message: "",
 	};
-	usersToDelete.forEach((value: User) => {
-		if (!validateUsers(value) || !exactMatch(value)) {
+	users.forEach((value: User) => {
+		if (!isValid(value)) {
 			res.failed.push(value);
 		} else {
-			const indexToDelete: number = Users.findIndex(
+			const index: number = Users.findIndex(
 				(object: User) => object.id == value.id
 			);
-			if (indexToDelete != -1) {
-				Users.splice(indexToDelete, 1);
+			if (index != -1) {
+				Users.splice(index, 1);
 				res.success.push(value);
 			}
 		}
 	});
-	res.message = formatBulkMessage(res, "deleted");
+	res.message = formatBulkOperationMessage(res, "delete", query);
 	return res;
+}
+
+function formatBulkOperationMessage(
+	res: bulkResults,
+	operation: string,
+	query: Query
+): string {
+	// User with full name Courvoisier VSOP could not be deleted. Make sure User exists or correct parameters are provided.
+	if (query === undefined) {
+		query = {
+			params: "",
+			query: "",
+		};
+		return (res.message =
+			operation +
+			" operation could not be completed. Please make sure correct parametrs are provided");
+	}
+	query.params = "fullName" ? "full name" : query.params;
+	return (res.message =
+		"User with " +
+		query.params +
+		" " +
+		query.query +
+		" could not be " +
+		operation +
+		"d. Make sure User exists or correct parameters are provided.");
 }
 
 function formatBulkMessage(res: bulkResults, operation: string): string {
@@ -215,11 +277,11 @@ function validateUsers(user: User): boolean {
 }
 
 function exactMatch(user: User): boolean {
-	if (
-		Users.find(
-			(value: User) => value.id == user.id && value.firstName == user.firstName
-		)
-	) {
-		return true;
-	}
+	return Users.some(
+		(value: User) => value.id == user.id && value.firstName == user.firstName
+	);
+}
+
+function isValid(user: User): Boolean {
+	return validateUsers(user) && exactMatch(user);
 }

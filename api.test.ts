@@ -8,6 +8,8 @@ import {
 	DeleteUser,
 	DeleteUsersBulk,
 	bulkResults,
+	BulkOperation,
+	Query,
 } from "./api";
 
 const DT_TrainOfThought: Date = new Date("2003-11-11");
@@ -79,27 +81,35 @@ describe("FindUser searches Users array and returns all Users whose criteria mat
 	beforeAll(() => {
 		ClearUsers();
 	});
+	let query: Query;
 	it("Should return and empty array when when no User is found with id 10", () => {
-		expect(FindUser("id", "10")).toEqual([]);
+		query = { params: "id", query: "10" };
+		expect(FindUser(query)).toEqual([]);
 	});
 	it("Should return an empty array when User Don Julio is not found by searching by its first name", () => {
-		expect(FindUser("firstName", "Don Julio")).toEqual([]);
+		query = { params: "firstName", query: "Don Julio" };
+		expect(FindUser(query)).toEqual([]);
 	});
 	it("Should return an empty array when User Elijah Craig is not found by searching by its last name", () => {
-		expect(FindUser("lastName", "Craig")).toEqual([]);
+		query = { params: "lastName", query: "Craig" };
+		expect(FindUser(query)).toEqual([]);
 	});
 	it("Should return an empty array when User Jim Bean is not found by searching by its full name", () => {
-		expect(FindUser("fullName", "Jim Bean")).toEqual([]);
+		query = { params: "fullName", query: "Jim Bean" };
+		expect(FindUser(query)).toEqual([]);
 	});
 	it("Should return an empty array when no User is found with date of birth June 5, 2003", () => {
-		expect(FindUser("birthDate", Epica_ThePhantomAgony.toString())).toEqual([]);
+		query = { params: "birthDate", query: Epica_ThePhantomAgony.toString() };
+		expect(FindUser(query)).toEqual([]);
 	});
 	it("Should return an Error when the Search Parameter is Alias or anything unknown", () => {
+		query = { params: "alias", query: "Gentleman" };
 		expect(() => {
-			FindUser("alias", "Gentleman");
+			FindUser(query);
 		}).toThrowError("alias is not a valid search parameter");
 	});
 	it("Should return User Jim Bean's data when searched by its ID", () => {
+		query = { params: "id", query: "1" };
 		const testUser1: User = {
 			id: 1,
 			firstName: "Jim",
@@ -107,9 +117,10 @@ describe("FindUser searches Users array and returns all Users whose criteria mat
 			birthDate: Epica_ThePhantomAgony,
 		};
 		CreateUser("Jim", "Bean", Epica_ThePhantomAgony);
-		expect(FindUser("id", "1")).toEqual([testUser1]);
+		expect(FindUser(query)).toEqual([testUser1]);
 	});
 	it("Should return User Johnnie Walker's data when searched by its first name", () => {
+		query = { params: "firstName", query: "Johnnie" };
 		const testUser2: User = {
 			id: 2,
 			firstName: "Johnnie",
@@ -117,9 +128,10 @@ describe("FindUser searches Users array and returns all Users whose criteria mat
 			birthDate: DT_TrainOfThought,
 		};
 		CreateUser("Johnnie", "Walker Black", DT_TrainOfThought);
-		expect(FindUser("firstName", "Johnnie")).toEqual([testUser2]);
+		expect(FindUser(query)).toEqual([testUser2]);
 	});
 	it("Should return Users Johnnie Walker Black & Johnnie Walker Green's data when searched by its first name", () => {
+		query = { params: "firstName", query: "Johnnie" };
 		const testUser2: User = {
 			id: 2,
 			firstName: "Johnnie",
@@ -133,9 +145,10 @@ describe("FindUser searches Users array and returns all Users whose criteria mat
 			birthDate: Kamelot_Epica,
 		};
 		CreateUser("Johnnie", "Walker Green", Kamelot_Epica);
-		expect(FindUser("firstName", "Johnnie")).toEqual([testUser2, testUser3]);
+		expect(FindUser(query)).toEqual([testUser2, testUser3]);
 	});
 	it("Should return user Elijah Craig's data by searching by its last name", () => {
+		query = { params: "lastName", query: "Craig" };
 		const testUser4: User = {
 			id: 4,
 			firstName: "Elijah",
@@ -143,9 +156,10 @@ describe("FindUser searches Users array and returns all Users whose criteria mat
 			birthDate: SX_Odyssey,
 		};
 		CreateUser("Elijah", "Craig", SX_Odyssey);
-		expect(FindUser("lastName", "Craig")).toEqual([testUser4]);
+		expect(FindUser(query)).toEqual([testUser4]);
 	});
 	it("Should return users Jose Cuervos' data when searching by their last names", () => {
+		query = { params: "lastName", query: "Cuervo" };
 		const testUser5: User = {
 			id: 5,
 			firstName: "Jose",
@@ -160,9 +174,10 @@ describe("FindUser searches Users array and returns all Users whose criteria mat
 		};
 		CreateUser("Jose", "Cuervo", DT_TrainOfThought);
 		CreateUser("Jose", "Cuervo", DM_WorldMisanthropy);
-		expect(FindUser("lastName", "Cuervo")).toEqual([testUser5, testUser6]);
+		expect(FindUser(query)).toEqual([testUser5, testUser6]);
 	});
 	it("Should return User Jack Daniels' data by searching by its full name 'Jack Daniels'", () => {
+		query = { params: "fullName", query: "Jack Daniels" };
 		const testUser7 = {
 			id: 7,
 			firstName: "Jack",
@@ -170,9 +185,10 @@ describe("FindUser searches Users array and returns all Users whose criteria mat
 			birthDate: Epica_ThePhantomAgony,
 		};
 		CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
-		expect(FindUser("fullName", "Jack Daniels")).toEqual([testUser7]);
+		expect(FindUser(query)).toEqual([testUser7]);
 	});
 	it("Should return all 3 Jack Daniels Users by searching by their full name", () => {
+		query = { params: "fullName", query: "Jack Daniels" };
 		const testUser7 = {
 			id: 7,
 			firstName: "Jack",
@@ -193,24 +209,20 @@ describe("FindUser searches Users array and returns all Users whose criteria mat
 		};
 		CreateUser("Jack", "Daniels", SX_Odyssey);
 		CreateUser("Jack", "Daniels", SX_Odyssey);
-		expect(FindUser("fullName", "Jack Daniels")).toEqual([
-			testUser7,
-			testUser8,
-			testUser9,
-		]);
+		expect(FindUser(query)).toEqual([testUser7, testUser8, testUser9]);
 	});
 	it("Should return User Jose Cuervo's data when searched by his birthDate May 28, 2002", () => {
+		query = { params: "birthDate", query: DM_WorldMisanthropy.toString() };
 		const testUser6 = {
 			id: 6,
 			firstName: "Jose",
 			lastName: "Cuervo",
 			birthDate: DM_WorldMisanthropy,
 		};
-		expect(FindUser("birthDate", DM_WorldMisanthropy.toString())).toEqual([
-			testUser6,
-		]);
+		expect(FindUser(query)).toEqual([testUser6]);
 	});
 	it("Should return User Jim Bean & Jack Daniels data when search by their birthDate (24)", () => {
+		query = { params: "birthDate", query: Epica_ThePhantomAgony.toString() };
 		const testUser1 = {
 			id: 1,
 			firstName: "Jim",
@@ -223,10 +235,7 @@ describe("FindUser searches Users array and returns all Users whose criteria mat
 			lastName: "Daniels",
 			birthDate: Epica_ThePhantomAgony,
 		};
-		expect(FindUser("birthDate", Epica_ThePhantomAgony.toString())).toEqual([
-			testUser1,
-			testUser7,
-		]);
+		expect(FindUser(query)).toEqual([testUser1, testUser7]);
 	});
 });
 
@@ -235,8 +244,9 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 	beforeAll(() => {
 		ClearUsers();
 	});
-	let oldData: User[] = [];
-	let newData: User[] = [];
+	let oldData: User[];
+	let newData: User[];
+	let query: Query;
 	beforeEach(() => {
 		oldData = [];
 		newData = [];
@@ -357,6 +367,7 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 		expect(UpdateUser(oldData, newData)).toEqual(newData);
 	});
 	it("Should find User Bacardi Limon by its full name and update its lastname to Blanco", () => {
+		query = { params: "fullName", query: "Bacardi Limon" };
 		oldData.push(CreateUser("Bacardi", "Limon", DT_TrainOfThought));
 		newData = [
 			{
@@ -366,19 +377,19 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 				birthDate: DT_TrainOfThought,
 			},
 		];
-		expect(UpdateUser(FindUser("fullName", "Bacardi Limon"), newData)).toEqual(
-			newData
-		);
+		expect(UpdateUser(FindUser(query), newData)).toEqual(newData);
 	});
 });
 
 // TODO: review testing for transactions, or consider executing individual tasks
 describe("DeleteUser removes Users from the Users array and returns the deleted Users's data", () => {
+	let query: Query;
 	beforeAll(() => {
 		ClearUsers();
 	});
 	it("Should return an empty array when User with full name Courvoisier VSOP is not found", () => {
-		expect(DeleteUser(FindUser("fullName", "Courvosier VSOP"))).toEqual([]);
+		query = { params: "fullName", query: "Courvosier VSOP" };
+		expect(DeleteUser(FindUser(query))).toEqual([]);
 	});
 	it("Should return an error when the user to be deleted contains an invalid first name", () => {
 		const testUser10: User[] = [
@@ -453,6 +464,7 @@ describe("DeleteUser removes Users from the Users array and returns the deleted 
 		);
 	});
 	it("Should delete User Jack Daniels when searching by its date of birth June 5th, 2003", () => {
+		query = { params: "birthDate", query: Epica_ThePhantomAgony.toString() };
 		const testUser1 = {
 			id: 1,
 			firstName: "Jack",
@@ -460,11 +472,10 @@ describe("DeleteUser removes Users from the Users array and returns the deleted 
 			birthDate: Epica_ThePhantomAgony,
 		};
 		CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
-		expect(
-			DeleteUser(FindUser("birthDate", Epica_ThePhantomAgony.toString()))
-		).toEqual([testUser1]);
+		expect(DeleteUser(FindUser(query))).toEqual([testUser1]);
 	});
 	it("Should delete User Jim Bean and when searching the remaining users it should return every User except Jim Bean", () => {
+		query = { params: "fullName", query: "Jim Bean" };
 		const testUser2 = {
 			id: 2,
 			firstName: "Jack",
@@ -487,164 +498,170 @@ describe("DeleteUser removes Users from the Users array and returns the deleted 
 		CreateUser("Don Julio", "Reposado", SX_Odyssey);
 		CreateUser("Johnnie", "Walker Blue", Kamelot_Epica);
 		CreateUser("Jim", "Bean", DT_TrainOfThought);
-		DeleteUser(FindUser("fullName", "Jim Bean"));
+		DeleteUser(FindUser(query));
 		expect(ViewUsers()).toEqual([testUser2, testUser3, testUser4]);
 	});
 });
 
 describe("DeleteUsersBulk deletes a group of Users from the Users array and returns a message with the number of success and failed operations including the Users' data", () => {
+	let testUser: User[];
+	let results: bulkResults;
+	let query: Query;
 	beforeAll(() => {
 		ClearUsers();
 	});
-	// // TODO: Review a way to to handle missed bulk operations or how to return more descriptive messages.
-	// it("Should return a message that no Users could be deleted when User with full name Courvoisier VSOP is not found", () => {
-	// 	const testUser: User[] = FindUser("fullName", "Courvoisier VSOP");
+	// TODO: Review a way to handle missed bulk operations or how to return more descriptive messages.
+	it("Should return an error message when entered Bulk action remove", () => {
+		expect(() => {
+			BulkOperation("remove", query, testUser);
+		}).toThrowError("remove is not a valid Bulk operation");
+	});
+	it("Should return a message that user with ID i was successfully deleted", () => {
+		query = { params: "fullName", query: "Captain Morgan" };
+		const testUser: User[] = FindUser(query);
+		const results: bulkResults = {
+			success: [],
+			failed: testUser,
+			message: "User with full name Captain Morgan could not be deleted. Make sure User exists or correct parameters are provided.",
+		};
+		expect(BulkOperation("delete", query, testUser)).toEqual(results);
+	});
+	// it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid first name", () => {
+	// 	const testUser: User[] = [
+	// 		{
+	// 			id: 1,
+	// 			firstName: "Remy –",
+	// 			lastName: "Martin",
+	// 			birthDate: DT_TrainOfThought,
+	// 		},
+	// 	];
 	// 	const results: bulkResults = {
 	// 		success: [],
 	// 		failed: testUser,
 	// 		message:
-	// 			"Successfully deleted 0 Users with 0 failed delete operations.\n" +
+	// 			"Successfully deleted 0 Users with 1 failed delete operation.\n" +
 	// 			"No Users were deleted.\n" +
-	// 			"User Courvoisier VSOP could not be deleted. Make sure User exists or correct parameters are provided.",
+	// 			"User Remy – Martin could not be deleted. Make sure User exists or correct parameters are provided.",
 	// 	};
-	// 	expect(DeleteUsersBulk(testUser)).toEqual(results);
+	// 	expect(DeleteUsersBulk(query, testUser)).toEqual(results);
 	// });
-	it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid first name", () => {
-		const testUser: User[] = [
-			{
-				id: 1,
-				firstName: "Remy –",
-				lastName: "Martin",
-				birthDate: DT_TrainOfThought,
-			},
-		];
-		const results: bulkResults = {
-			success: [],
-			failed: testUser,
-			message:
-				"Successfully deleted 0 Users with 1 failed delete operation.\n" +
-				"No Users were deleted.\n" +
-				"User Remy – Martin could not be deleted. Make sure User exists or correct parameters are provided.",
-		};
-		expect(DeleteUsersBulk(testUser)).toEqual(results);
-	});
-	it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid last name", () => {
-		const testUser: User[] = [
-			{
-				id: 2,
-				firstName: "Remy",
-				lastName: "Martin!",
-				birthDate: DT_TrainOfThought,
-			},
-		];
-		const results: bulkResults = {
-			success: [],
-			failed: testUser,
-			message:
-				"Successfully deleted 0 Users with 1 failed delete operation.\n" +
-				"No Users were deleted.\n" +
-				"User Remy Martin! could not be deleted. Make sure User exists or correct parameters are provided.",
-		};
-		expect(DeleteUsersBulk(testUser)).toEqual(results);
-	});
-	it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid date of birth", () => {
-		const testUser: User[] = [
-			{
-				id: 3,
-                firstName: "Remy",
-                lastName: "Martin",
-                birthDate: new Date("I like turtles"),
-			},
-		];
-		const results: bulkResults = {
-			success: [],
-			failed: testUser,
-			message:
-				"Successfully deleted 0 Users with 1 failed delete operation.\n" +
-				"No Users were deleted.\n" +
-				"User Remy Martin could not be deleted. Make sure User exists or correct parameters are provided.",
-		};
-		expect(DeleteUsersBulk(testUser)).toEqual(results);
-	});
-	it("Should return a message that no Users could be deleted when there are no valid users to delete", () => {
-		const testUser14: User[] = [
-			{
-				id: 0,
-				firstName: "Don",
-				lastName: "Julio",
-				birthDate: DM_WorldMisanthropy,
-			},
-		];
-		const results2: bulkResults = {
-			success: [],
-			failed: [
-				{
-					id: 0,
-					firstName: "Don",
-					lastName: "Julio",
-					birthDate: DM_WorldMisanthropy,
-				},
-			],
-			message:
-				"Successfully deleted 0 Users with 1 failed delete operation.\n" +
-				"No Users were deleted.\n" +
-				"User Don Julio could not be deleted. Make sure User exists or correct parameters are provided.",
-		};
-		expect(DeleteUsersBulk(testUser14)).toEqual(results2);
-	});
-	it("Should successfully delete Users Jack Daniels & Jim Bean but fail to delete non-existing User Jose Cuervo while returning their data", () => {
-		const testUser15: User[] = [
-			{
-				id: 1,
-				firstName: "Jack",
-				lastName: "Daniels",
-				birthDate: Epica_ThePhantomAgony,
-			},
-			{
-				id: 2,
-				firstName: "Jim",
-				lastName: "Bean",
-				birthDate: DM_WorldMisanthropy,
-			},
-			{
-				id: 0,
-				firstName: "Jose",
-				lastName: "Cuervo",
-				birthDate: Kamelot_Epica,
-			},
-		];
-		const results1: bulkResults = {
-			success: [
-				{
-					id: 1,
-					firstName: "Jack",
-					lastName: "Daniels",
-					birthDate: Epica_ThePhantomAgony,
-				},
-				{
-					id: 2,
-					firstName: "Jim",
-					lastName: "Bean",
-					birthDate: DM_WorldMisanthropy,
-				},
-			],
-			failed: [
-				{
-					id: 0,
-					firstName: "Jose",
-					lastName: "Cuervo",
-					birthDate: Kamelot_Epica,
-				},
-			],
-			message:
-				"Successfully deleted 2 Users with 1 failed delete operation.\n" +
-				"Users Jack Daniels & Jim Bean were deleted.\n" +
-				"User Jose Cuervo could not be deleted. Make sure User exists or correct parameters are provided.",
-		};
-		CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
-		CreateUser("Jim", "Bean", DM_WorldMisanthropy);
-		expect(DeleteUsersBulk(testUser15)).toEqual(results1);
-	});
+	// it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid last name", () => {
+	// 	const testUser: User[] = [
+	// 		{
+	// 			id: 2,
+	// 			firstName: "Remy",
+	// 			lastName: "Martin!",
+	// 			birthDate: DT_TrainOfThought,
+	// 		},
+	// 	];
+	// 	const results: bulkResults = {
+	// 		success: [],
+	// 		failed: testUser,
+	// 		message:
+	// 			"Successfully deleted 0 Users with 1 failed delete operation.\n" +
+	// 			"No Users were deleted.\n" +
+	// 			"User Remy Martin! could not be deleted. Make sure User exists or correct parameters are provided.",
+	// 	};
+	// 	expect(DeleteUsersBulk(query, testUser)).toEqual(results);
+	// });
+	// it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid date of birth", () => {
+	// 	const testUser: User[] = [
+	// 		{
+	// 			id: 3,
+	// 			firstName: "Remy",
+	// 			lastName: "Martin",
+	// 			birthDate: new Date("I like turtles"),
+	// 		},
+	// 	];
+	// 	const results: bulkResults = {
+	// 		success: [],
+	// 		failed: testUser,
+	// 		message:
+	// 			"Successfully deleted 0 Users with 1 failed delete operation.\n" +
+	// 			"No Users were deleted.\n" +
+	// 			"User Remy Martin could not be deleted. Make sure User exists or correct parameters are provided.",
+	// 	};
+	// 	expect(DeleteUsersBulk(query, testUser)).toEqual(results);
+	// });
+	// it("Should return a message that no Users could be deleted when there are no valid users to delete", () => {
+	// 	const testUser14: User[] = [
+	// 		{
+	// 			id: 0,
+	// 			firstName: "Don",
+	// 			lastName: "Julio",
+	// 			birthDate: DM_WorldMisanthropy,
+	// 		},
+	// 	];
+	// 	const results2: bulkResults = {
+	// 		success: [],
+	// 		failed: [
+	// 			{
+	// 				id: 0,
+	// 				firstName: "Don",
+	// 				lastName: "Julio",
+	// 				birthDate: DM_WorldMisanthropy,
+	// 			},
+	// 		],
+	// 		message:
+	// 			"Successfully deleted 0 Users with 1 failed delete operation.\n" +
+	// 			"No Users were deleted.\n" +
+	// 			"User Don Julio could not be deleted. Make sure User exists or correct parameters are provided.",
+	// 	};
+	// 	expect(DeleteUsersBulk(query, testUser14)).toEqual(results2);
+	// });
+	// it("Should successfully delete Users Jack Daniels & Jim Bean but fail to delete non-existing User Jose Cuervo while returning their data", () => {
+	// 	const testUser15: User[] = [
+	// 		{
+	// 			id: 1,
+	// 			firstName: "Jack",
+	// 			lastName: "Daniels",
+	// 			birthDate: Epica_ThePhantomAgony,
+	// 		},
+	// 		{
+	// 			id: 2,
+	// 			firstName: "Jim",
+	// 			lastName: "Bean",
+	// 			birthDate: DM_WorldMisanthropy,
+	// 		},
+	// 		{
+	// 			id: 0,
+	// 			firstName: "Jose",
+	// 			lastName: "Cuervo",
+	// 			birthDate: Kamelot_Epica,
+	// 		},
+	// 	];
+	// 	const results1: bulkResults = {
+	// 		success: [
+	// 			{
+	// 				id: 1,
+	// 				firstName: "Jack",
+	// 				lastName: "Daniels",
+	// 				birthDate: Epica_ThePhantomAgony,
+	// 			},
+	// 			{
+	// 				id: 2,
+	// 				firstName: "Jim",
+	// 				lastName: "Bean",
+	// 				birthDate: DM_WorldMisanthropy,
+	// 			},
+	// 		],
+	// 		failed: [
+	// 			{
+	// 				id: 0,
+	// 				firstName: "Jose",
+	// 				lastName: "Cuervo",
+	// 				birthDate: Kamelot_Epica,
+	// 			},
+	// 		],
+	// 		message:
+	// 			"Successfully deleted 2 Users with 1 failed delete operation.\n" +
+	// 			"Users Jack Daniels & Jim Bean were deleted.\n" +
+	// 			"User Jose Cuervo could not be deleted. Make sure User exists or correct parameters are provided.",
+	// 	};
+	// 	CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
+	// 	CreateUser("Jim", "Bean", DM_WorldMisanthropy);
+	// 	expect(DeleteUsersBulk(query, testUser15)).toEqual(results1);
+	// });
 });
 
 // run tests with the "npx jest" commmand in the terminal
