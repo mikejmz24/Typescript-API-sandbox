@@ -8,6 +8,7 @@ export interface User {
 export interface bulkResults {
 	success: User[];
 	failed: User[];
+	failedQueries: Query[];
 	message: string;
 }
 
@@ -42,7 +43,7 @@ export function ViewUsers(): User[] {
 
 export function FindUser(query: Query): User[] {
 	try {
-		if(isUserArrayEmpty(Users)) {
+		if (isUserArrayEmpty(Users)) {
 			throw new Error("There are no registered Users!");
 		}
 		return Param[query.params](query.query);
@@ -78,7 +79,7 @@ const Param: { [key: string]: any } = {
 };
 
 function isUserArrayEmpty(users: User[]): boolean {
-	return (users === undefined || users === null);
+	return users === undefined || users === null;
 }
 
 // TODO: Consider implementing transactions or individual tasks. Current behavior does valid tasks but returns error if one failed.
@@ -120,16 +121,15 @@ export function DeleteUser(users: User[]): User[] {
 
 export function BulkOperation(
 	operation: string,
-	query: Query,
-	users: User[]
+	queries: Query[]
 ): bulkResults {
 	try {
-		if (query === undefined && users === undefined) {
+		if (queries === undefined) {
 			throw new Error(
 				`${operation} cannot be completed. Please provide valid parameters.`
 			);
 		}
-		return Operation[operation](query, users);
+		return Operation[operation](queries);
 	} catch (err) {
 		throw new Error(`${operation} is not a valid Bulk operation.
 		${err.message}`);
@@ -137,58 +137,87 @@ export function BulkOperation(
 }
 
 const Operation: { [key: string]: any } = {
-	delete: (query: Query, users: User[]) => {
-		return DeleteUsersBulk(query, users);
+	delete: (queries: Query[]) => {
+		return DeleteUsersBulk(queries);
 	},
 };
 
-export function DeleteUsersBulk(query: Query, users: User[]): bulkResults {
+function DeleteUsersBulk(queries: Query[]): bulkResults {
 	let res: bulkResults = {
 		success: [],
 		failed: [],
+		failedQueries: [],
 		message: "",
 	};
-	users.forEach((value: User) => {
-		if (!isValid(value)) {
-			res.failed.push(value);
+	queries.forEach((query: Query) => {
+		let users: User[] = FindUser(query);
+		if (users.length > 0) {
+			users.forEach((value: User) => {
+				const userIndex: number = Users.findIndex(
+					(object: User) => object.id == value.id
+				);
+				if (userIndex != 1) {
+					Users.splice(userIndex, 1);
+					res.success.push(value);
+				}
+			});
 		} else {
-			const index: number = Users.findIndex(
-				(object: User) => object.id == value.id
-			);
-			if (index != -1) {
-				Users.splice(index, 1);
-				res.success.push(value);
-			}
+			res.failedQueries.push(query);
 		}
 	});
-	res.message = formatBulkOperationMessage(res, "delete", query);
+	res.message = formatBulkOperationMessage(res, "delete");
 	return res;
 }
 
 function formatBulkOperationMessage(
 	res: bulkResults,
-	operation: string,
-	query: Query
+	operation: string
 ): string {
-	// User with full name Courvoisier VSOP could not be deleted. Make sure User exists or correct parameters are provided.
-	if (query === undefined) {
-		query = {
-			params: "",
-			query: "",
-		};
-		return (res.message =
-			operation +
-			" operation could not be completed. Please make sure correct parametrs are provided");
+	const successCases: number = res.success.length;
+	const failedCases: number = res.failedQueries.length;
+	const userQuantity: string = successCases != 1 ? "Users" : "User";
+	const successUsers: string =
+		successCases > 0
+			? `Successfully ${operation}d ${successCases} ${userQuantity}.\n`
+			: "";
+	const userPlural: string =
+		successCases != 1 ? ` were ${operation}d.\n` : ` was ${operation}d.\n`;
+	let deletedUsers: string = usersDeleted(res.success);
+	let failedUsers: string = failedDeleted(res.failedQueries);
+	const successPredicate: string =
+		successCases > 0 ? userQuantity + " " + deletedUsers + userPlural : "";
+	const failedPredicate: string =
+		failedCases > 0
+			? userQuantity +
+			  " with " +
+			  failedUsers +
+			  ` could not be ${operation}d. Make sure User exists or correct parameters are provided.`
+			: "";
+	return (res.message = successUsers + successPredicate + failedPredicate);
+}
+
+function usersDeleted(users: User[]): string {
+	let res: string = "";
+	if (users.length > 0) {
+		users.forEach(
+			(user: User) => (res += `${user.firstName} ${user.lastName} & `)
+		);
+		return res.substring(0, res.length - 3);
 	}
-	query.params = "fullName" ? "full name" : query.params;
-	return (res.message =
-		"User with " +
-		query.params +
-		" " +
-		query.query +
-		" could not be " +
-		operation +
-		"d. Make sure User exists or correct parameters are provided.");
+	return res;
+}
+
+function failedDeleted(queries: Query[]): string {
+	let res: string = "";
+	if (queries.length > 0) {
+		queries.forEach(
+			// (query: Query) => (res += `${query.params} ${query.query} & `)
+			(query: Query) =>
+				(res += `${query.params.replace(/[N]/, " n")} ${query.query} & `)
+		);
+		return res.substring(0, res.length - 3);
+	}
+	return res;
 }
 
 function formatBulkMessage(res: bulkResults, operation: string): string {

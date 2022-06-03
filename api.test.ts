@@ -6,7 +6,6 @@ import {
 	FindUser,
 	UpdateUser,
 	DeleteUser,
-	DeleteUsersBulk,
 	bulkResults,
 	BulkOperation,
 	Query,
@@ -510,127 +509,124 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 	beforeAll(() => {
 		ClearUsers();
 	});
-	// TODO: Review a way to handle missed bulk operations or how to return more descriptive messages.
-	it("Should return an error message when entered Bulk action remove", () => {
-		expect(() => {
-			BulkOperation("remove", query, testUser);
-		}).toThrowError("remove is not a valid Bulk operation");
-	});
-	it("Should return a message that user with ID i was successfully deleted", () => {
-		query = { params: "fullName", query: "Captain Morgan" };
-		const testUser: User[] = FindUser(query);
-		const results: bulkResults = {
+	beforeEach(() => {
+		testUser = [];
+		results = {
 			success: [],
-			failed: testUser,
-			message: "User with full name Captain Morgan could not be deleted. Make sure User exists or correct parameters are provided.",
+			failed: [],
+			failedQueries: [],
+			message: "",
 		};
-		expect(BulkOperation("delete", query, testUser)).toEqual(results);
+		query = { params: "", query: "" };
 	});
-	// it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid first name", () => {
-	// 	const testUser: User[] = [
+	// // TODO: Review a way to handle missed bulk operations or how to return more descriptive messages.
+	// it("Should return an error message when entered Bulk action remove", () => {
+	// 	expect(() => {
+	// 		BulkOperation("remove", query, testUser);
+	// 	}).toThrowError("remove is not a valid Bulk operation");
+	// });
+	// it("Should fail to delete non-existing User with full name Captain Morgan", () => {
+	// 	query = { params: "fullName", query: "Captain Morgan" };
+	// 	testUser = FindUser(query);
+	// 	results = {
+	// 		success: [],
+	// 		failed: testUser,
+	// 		message:
+	// 			"User with full name Captain Morgan could not be deleted. Make sure User exists or correct parameters are provided.",
+	// 	};
+	// 	expect(BulkOperation("delete", query, testUser)).toEqual(results);
+	// });
+	// it("Should fail to delete non-existing User with first name Johnny! Walkers", () => {
+	// 	query = { params: "firstName", query: "Johnny! Walkers" };
+	// 	testUser = [
 	// 		{
 	// 			id: 1,
-	// 			firstName: "Remy –",
-	// 			lastName: "Martin",
+	// 			firstName: "Johnny! Walkers",
+	// 			lastName: "Walker",
 	// 			birthDate: DT_TrainOfThought,
 	// 		},
 	// 	];
-	// 	const results: bulkResults = {
+	// 	results = {
 	// 		success: [],
 	// 		failed: testUser,
 	// 		message:
-	// 			"Successfully deleted 0 Users with 1 failed delete operation.\n" +
-	// 			"No Users were deleted.\n" +
-	// 			"User Remy – Martin could not be deleted. Make sure User exists or correct parameters are provided.",
+	// 			"User with first name Johnny! Walkers could not be deleted. Make sure User exists or correct parameters are provided.",
 	// 	};
-	// 	expect(DeleteUsersBulk(query, testUser)).toEqual(results);
+	// 	expect(BulkOperation("delete", query, testUser)).toEqual(results);
 	// });
-	// it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid last name", () => {
-	// 	const testUser: User[] = [
+	// it("Should fail to delete non-existing user with last name – Pérignon", () => {
+	// 	query = { params: "lastName", query: "– Pérignon" };
+	// 	testUser = [
 	// 		{
 	// 			id: 2,
-	// 			firstName: "Remy",
-	// 			lastName: "Martin!",
+	// 			firstName: "Dom",
+	// 			lastName: "– Pérignon",
 	// 			birthDate: DT_TrainOfThought,
 	// 		},
 	// 	];
-	// 	const results: bulkResults = {
+	// 	results = {
 	// 		success: [],
 	// 		failed: testUser,
 	// 		message:
-	// 			"Successfully deleted 0 Users with 1 failed delete operation.\n" +
-	// 			"No Users were deleted.\n" +
-	// 			"User Remy Martin! could not be deleted. Make sure User exists or correct parameters are provided.",
+	// 			"User with last name – Pérignon could not be deleted. Make sure User exists or correct parameters are provided.",
 	// 	};
-	// 	expect(DeleteUsersBulk(query, testUser)).toEqual(results);
+	// 	expect(BulkOperation("delete", query, testUser)).toEqual(results);
 	// });
-	// it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid date of birth", () => {
-	// 	const testUser: User[] = [
-	// 		{
-	// 			id: 3,
-	// 			firstName: "Remy",
-	// 			lastName: "Martin",
-	// 			birthDate: new Date("I like turtles"),
-	// 		},
-	// 	];
-	// 	const results: bulkResults = {
-	// 		success: [],
-	// 		failed: testUser,
-	// 		message:
-	// 			"Successfully deleted 0 Users with 1 failed delete operation.\n" +
-	// 			"No Users were deleted.\n" +
-	// 			"User Remy Martin could not be deleted. Make sure User exists or correct parameters are provided.",
-	// 	};
-	// 	expect(DeleteUsersBulk(query, testUser)).toEqual(results);
-	// });
-	// it("Should return a message that no Users could be deleted when there are no valid users to delete", () => {
-	// 	const testUser14: User[] = [
-	// 		{
-	// 			id: 0,
-	// 			firstName: "Don",
-	// 			lastName: "Julio",
-	// 			birthDate: DM_WorldMisanthropy,
-	// 		},
-	// 	];
-	// 	const results2: bulkResults = {
-	// 		success: [],
-	// 		failed: [
-	// 			{
-	// 				id: 0,
-	// 				firstName: "Don",
-	// 				lastName: "Julio",
-	// 				birthDate: DM_WorldMisanthropy,
-	// 			},
-	// 		],
-	// 		message:
-	// 			"Successfully deleted 0 Users with 1 failed delete operation.\n" +
-	// 			"No Users were deleted.\n" +
-	// 			"User Don Julio could not be deleted. Make sure User exists or correct parameters are provided.",
-	// 	};
-	// 	expect(DeleteUsersBulk(query, testUser14)).toEqual(results2);
-	// });
+	// // it("Should return a message that no Users could be deleted when the User to be deleted contains an invalid date of birth", () => {
+	// // 	const testUser: User[] = [
+	// // 		{
+	// // 			id: 3,
+	// // 			firstName: "Remy",
+	// // 			lastName: "Martin",
+	// // 			birthDate: new Date("I like turtles"),
+	// // 		},
+	// // 	];
+	// // 	const results: bulkResults = {
+	// // 		success: [],
+	// // 		failed: testUser,
+	// // 		message:
+	// // 			"Successfully deleted 0 Users with 1 failed delete operation.\n" +
+	// // 			"No Users were deleted.\n" +
+	// // 			"User Remy Martin could not be deleted. Make sure User exists or correct parameters are provided.",
+	// // 	};
+	// // 	expect(DeleteUsersBulk(query, testUser)).toEqual(results);
+	// // });
+	// // it("Should return a message that no Users could be deleted when there are no valid users to delete", () => {
+	// // 	const testUser14: User[] = [
+	// // 		{
+	// // 			id: 0,
+	// // 			firstName: "Don",
+	// // 			lastName: "Julio",
+	// // 			birthDate: DM_WorldMisanthropy,
+	// // 		},
+	// // 	];
+	// // 	const results2: bulkResults = {
+	// // 		success: [],
+	// // 		failed: [
+	// // 			{
+	// // 				id: 0,
+	// // 				firstName: "Don",
+	// // 				lastName: "Julio",
+	// // 				birthDate: DM_WorldMisanthropy,
+	// // 			},
+	// // 		],
+	// // 		message:
+	// // 			"Successfully deleted 0 Users with 1 failed delete operation.\n" +
+	// // 			"No Users were deleted.\n" +
+	// // 			"User Don Julio could not be deleted. Make sure User exists or correct parameters are provided.",
+	// // 	};
+	// // 	expect(DeleteUsersBulk(query, testUser14)).toEqual(results2);
+	// // });
 	// it("Should successfully delete Users Jack Daniels & Jim Bean but fail to delete non-existing User Jose Cuervo while returning their data", () => {
-	// 	const testUser15: User[] = [
-	// 		{
-	// 			id: 1,
-	// 			firstName: "Jack",
-	// 			lastName: "Daniels",
-	// 			birthDate: Epica_ThePhantomAgony,
-	// 		},
-	// 		{
-	// 			id: 2,
-	// 			firstName: "Jim",
-	// 			lastName: "Bean",
-	// 			birthDate: DM_WorldMisanthropy,
-	// 		},
-	// 		{
-	// 			id: 0,
-	// 			firstName: "Jose",
-	// 			lastName: "Cuervo",
-	// 			birthDate: Kamelot_Epica,
-	// 		},
-	// 	];
-	// 	const results1: bulkResults = {
+	// 	CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
+	// 	CreateUser("Jim", "Bean", DM_WorldMisanthropy);
+	// 	query = { params: "id", query: "1" };
+	// 	testUser = testUser.concat(FindUser(query));
+	// 	query = { params: "id", query: "2" };
+	// 	testUser = testUser.concat(FindUser(query));
+	// 	query = { params: "fullName", query: "Jose Cuervo" };
+	// 	testUser = testUser.concat(FindUser(query));
+	// 	results = {
 	// 		success: [
 	// 			{
 	// 				id: 1,
@@ -645,23 +641,62 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 	// 				birthDate: DM_WorldMisanthropy,
 	// 			},
 	// 		],
-	// 		failed: [
-	// 			{
-	// 				id: 0,
-	// 				firstName: "Jose",
-	// 				lastName: "Cuervo",
-	// 				birthDate: Kamelot_Epica,
-	// 			},
-	// 		],
+	// 		failed: [],
 	// 		message:
-	// 			"Successfully deleted 2 Users with 1 failed delete operation.\n" +
+	// 			"Successfully deleted 2 Users.\n" +
 	// 			"Users Jack Daniels & Jim Bean were deleted.\n" +
-	// 			"User Jose Cuervo could not be deleted. Make sure User exists or correct parameters are provided.",
+	// 			"User with full name Jose Cuervo could not be deleted. Make sure User exists or correct parameters are provided.",
 	// 	};
-	// 	CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
-	// 	CreateUser("Jim", "Bean", DM_WorldMisanthropy);
-	// 	expect(DeleteUsersBulk(query, testUser15)).toEqual(results1);
+	// 	expect(BulkOperation("delete", query, testUser)).toEqual(results);
 	// });
+	it("Should delete 10 users and fail to delete 3 users", () => {
+		let queries: Query[] = [];
+		CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
+		CreateUser("Jim", "Bean", DT_TrainOfThought);
+		CreateUser("Johnnie", "Walker", SX_Odyssey);
+		CreateUser("Don", "Julio", DM_WorldMisanthropy);
+		CreateUser("Jose", "Cuervo", Epica_ThePhantomAgony);
+		CreateUser("Pappy", "van Winkle", DT_TrainOfThought);
+		CreateUser("Johnnie", "Walker Black", SX_Odyssey);
+		CreateUser("Johnnie", "Walker Blue", DM_WorldMisanthropy);
+		CreateUser("Johnnie", "Walker Green", Epica_ThePhantomAgony);
+		CreateUser("Bacardi", "Limon", SX_Odyssey);
+		queries = queries.concat({ params: "firstName", query: "Jack" });
+		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+		queries = queries.concat({ params: "lastName", query: "Bean" });
+		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+		queries = queries.concat({ params: "firstName", query: "Johnnie" });
+		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+		queries = queries.concat({ params: "fullName", query: "Don Julio" });
+		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+		queries = queries.concat({ params: "lastName", query: "Cuervo" });
+		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+		queries = queries.concat({ params: "firstName", query: "Pappy" });
+		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+		queries = queries.concat({ params: "fullName", query: "Bacardi Limon" });
+		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+		// failed users
+		queries = queries.concat({ params: "fullName", query: "Don Pedro" });
+		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+		queries = queries.concat({ params: "lastName", query: "Regal" });
+		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+		queries = queries.concat({ params: "firstName", query: "William" });
+		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+		results = {
+			success: testUser,
+			failed: [],
+			failedQueries: [
+				{ params: "fullName", query: "Don Pedro" },
+				{ params: "lastName", query: "Regal" },
+				{ params: "firstName", query: "William" },
+			],
+			message:
+				"Successfully deleted 10 Users.\n" +
+				"Users Jack Daniels & Jim Bean & Johnnie Walker & Johnnie Walker Black & Johnnie Walker Blue & Johnnie Walker Green & Don Julio & Jose Cuervo & Pappy van Winkle & Bacardi Limon were deleted.\n" +
+				"Users with full name Don Pedro & last name Regal & first name William could not be deleted. Make sure User exists or correct parameters are provided.",
+		};
+		expect(BulkOperation("delete", queries)).toEqual(results);
+	});
 });
 
 // run tests with the "npx jest" commmand in the terminal
