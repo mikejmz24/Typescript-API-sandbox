@@ -42,14 +42,23 @@ export function ViewUsers(): User[] {
 }
 
 export function FindUser(query: Query): User[] {
-	try {
-		if (isUserArrayEmpty(Users)) {
-			throw new Error("There are no registered Users!");
-		}
-		return Param[query.params](query.query);
-	} catch (err) {
+	// try {
+	// 	if (isUserArrayEmpty(Users)) {
+	// 		throw new Error("There are no registered Users!");
+	// 	}
+	// 	return Param[query.params](query.query);
+	// } catch (err) {
+	// 	throw new Error(`${query.params} is not a valid search parameter`);
+	// // }
+
+	// if (!validArray(Users)) {
+	// 	// throw new Error("There are no registered Users!");
+	// 	return [];
+	// }
+	if (Param[query.params] === undefined) {
 		throw new Error(`${query.params} is not a valid search parameter`);
 	}
+	return Param[query.params](query.query);
 }
 
 const Param: { [key: string]: any } = {
@@ -78,7 +87,11 @@ const Param: { [key: string]: any } = {
 	},
 };
 
-function isUserArrayEmpty(users: User[]): boolean {
+// function isUserArrayEmpty(users: User[]): boolean {
+// 	return users === undefined || users === null;
+// }
+
+function validArray(users: User[]): boolean {
 	return users === undefined || users === null;
 }
 
@@ -123,17 +136,26 @@ export function BulkOperation(
 	operation: string,
 	queries: Query[]
 ): bulkResults {
-	try {
-		if (queries === undefined) {
-			throw new Error(
-				`${operation} cannot be completed. Please provide valid parameters.`
-			);
-		}
-		return Operation[operation](queries);
-	} catch (err) {
-		throw new Error(`${operation} is not a valid Bulk operation.
-		${err.message}`);
+	// try {
+	// 	if (queries === undefined) {
+	// 		throw new Error(
+	// 			`${operation} cannot be completed. Please provide valid parameters.`
+	// 		);
+	// 	}
+	// 	return Operation[operation](queries);
+	// } catch (err) {
+	// 	throw new Error(`${operation} is not a valid Bulk operation.
+	// 	${err.message}`);
+	// }
+	if (Operation[operation] === undefined) {
+		throw new Error(`${operation} is not a valid Bulk operation.`);
 	}
+	if (queries === undefined) {
+		throw new Error(
+			`${operation} Bulk operation cannot be performed. Please provide valid parameters.`
+		);
+	}
+	return Operation[operation](queries);
 }
 
 const Operation: { [key: string]: any } = {
@@ -175,25 +197,41 @@ function formatBulkOperationMessage(
 ): string {
 	const successCases: number = res.success.length;
 	const failedCases: number = res.failedQueries.length;
-	const userQuantity: string = successCases != 1 ? "Users" : "User";
 	const successUsers: string =
 		successCases > 0
-			? `Successfully ${operation}d ${successCases} ${userQuantity}.\n`
+			? `Successfully ${operation}d ${successCases} ${userQuantity(
+					successCases
+			  )}.\n`
 			: "";
 	const userPlural: string =
 		successCases != 1 ? ` were ${operation}d.\n` : ` was ${operation}d.\n`;
 	let deletedUsers: string = usersDeleted(res.success);
 	let failedUsers: string = failedDeleted(res.failedQueries);
 	const successPredicate: string =
-		successCases > 0 ? userQuantity + " " + deletedUsers + userPlural : "";
-	const failedPredicate: string =
+		successCases > 0
+			? userQuantity(successCases) + " " + deletedUsers + userPlural
+			: "";
+	const failedUserPronoun: string = userQuantity(failedCases);
+	let failedPredicate: string =
 		failedCases > 0
-			? userQuantity +
+			? failedUserPronoun +
 			  " with " +
 			  failedUsers +
-			  ` could not be ${operation}d. Make sure User exists or correct parameters are provided.`
+			  ` could not be ${operation}d. Make sure ${failedUserPronoun} exist${
+					failedCases != 1 ? "" : "s"
+			  } or correct parameters are provided.`
 			: "";
+	failedPredicate =
+		res.failed.length == 0 &&
+		res.failedQueries.length == 0 &&
+		res.success.length == 0
+			? "No Users could be deleted. Make sure Users exist or correct parameters are provided."
+			: failedPredicate;
 	return (res.message = successUsers + successPredicate + failedPredicate);
+}
+
+function userQuantity(evaluation: number): string {
+	return evaluation != 1 ? "Users" : "User";
 }
 
 function usersDeleted(users: User[]): string {
@@ -211,9 +249,13 @@ function failedDeleted(queries: Query[]): string {
 	let res: string = "";
 	if (queries.length > 0) {
 		queries.forEach(
-			// (query: Query) => (res += `${query.params} ${query.query} & `)
 			(query: Query) =>
+			{if(query.params == "birthDate") {
+				(res += "invalid date of birth & ")
+			} else {
 				(res += `${query.params.replace(/[N]/, " n")} ${query.query} & `)
+			}}
+				// (res += `${query.params.replace(/[N]/, " n")} ${query.query} & `)
 		);
 		return res.substring(0, res.length - 3);
 	}
