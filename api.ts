@@ -42,19 +42,6 @@ export function ViewUsers(): User[] {
 }
 
 export function FindUser(query: Query): User[] {
-	// try {
-	// 	if (isUserArrayEmpty(Users)) {
-	// 		throw new Error("There are no registered Users!");
-	// 	}
-	// 	return Param[query.params](query.query);
-	// } catch (err) {
-	// 	throw new Error(`${query.params} is not a valid search parameter`);
-	// // }
-
-	// if (!validArray(Users)) {
-	// 	// throw new Error("There are no registered Users!");
-	// 	return [];
-	// }
 	if (Param[query.params] === undefined) {
 		throw new Error(`${query.params} is not a valid search parameter`);
 	}
@@ -80,9 +67,9 @@ const Param: { [key: string]: any } = {
 			return user.firstName + " " + user.lastName == fullName;
 		});
 	},
-	birthDate: (birthDate: Date) => {
+	birthDate: (birthDate: Date | string) => {
 		return Users.filter((user: User) => {
-			return user.birthDate == birthDate;
+			return user.birthDate.toISOString() == new Date(birthDate).toISOString();
 		});
 	},
 };
@@ -136,17 +123,6 @@ export function BulkOperation(
 	operation: string,
 	queries: Query[]
 ): bulkResults {
-	// try {
-	// 	if (queries === undefined) {
-	// 		throw new Error(
-	// 			`${operation} cannot be completed. Please provide valid parameters.`
-	// 		);
-	// 	}
-	// 	return Operation[operation](queries);
-	// } catch (err) {
-	// 	throw new Error(`${operation} is not a valid Bulk operation.
-	// 	${err.message}`);
-	// }
 	if (Operation[operation] === undefined) {
 		throw new Error(`${operation} is not a valid Bulk operation.`);
 	}
@@ -248,19 +224,44 @@ function usersDeleted(users: User[]): string {
 function failedDeleted(queries: Query[]): string {
 	let res: string = "";
 	if (queries.length > 0) {
-		queries.forEach(
-			(query: Query) =>
-			{if(query.params == "birthDate") {
-				(res += "invalid date of birth & ")
-			} else {
-				(res += `${query.params.replace(/[N]/, " n")} ${query.query} & `)
-			}}
-				// (res += `${query.params.replace(/[N]/, " n")} ${query.query} & `)
-		);
+		queries.forEach((query: Query) => {
+			res += failedFormattedMessage(query);
+		});
 		return res.substring(0, res.length - 3);
 	}
 	return res;
 }
+
+function failedFormattedMessage(query: Query): string {
+	const DoB = new Date(query.query.toString());
+
+	if (query.params == "birthDate") {
+		if (validateDate(DoB)) {
+			return `date of birth ${
+				Months[DoB.getMonth()]
+			} ${DoB.getDate()} ${DoB.getFullYear()} & `;
+		} else {
+			return "invalid date of birth & ";
+		}
+	} else {
+		return `${query.params.replace(/[N]/, " n")} ${query.query} & `;
+	}
+}
+
+const Months: string[] = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"Deceåmber",
+];
 
 function formatBulkMessage(res: bulkResults, operation: string): string {
 	const successNum: number = res.success.length;
