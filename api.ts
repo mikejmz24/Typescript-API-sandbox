@@ -8,13 +8,20 @@ export interface User {
 export interface bulkResults {
 	success: User[];
 	failed: User[];
-	failedQueries: Query[];
+	successfulQueries: bulkParams[];
+	failedQueries: bulkParams[];
+	errors: string[];
 	message: string;
 }
 
 export interface Query {
 	params: string;
 	query: string;
+}
+
+export interface bulkParams {
+	searchQuery: Query;
+	operationQueries?: Query[];
 }
 
 let Users: User[] = [];
@@ -74,10 +81,6 @@ const Param: { [key: string]: any } = {
 	},
 };
 
-// function isUserArrayEmpty(users: User[]): boolean {
-// 	return users === undefined || users === null;
-// }
-
 function validArray(users: User[]): boolean {
 	return users === undefined || users === null;
 }
@@ -119,37 +122,91 @@ export function DeleteUser(users: User[]): User[] {
 	return deletedUsers;
 }
 
+// TODO: Think about dynamic (single and multiple) update functions by User parameters.
 export function BulkOperation(
 	operation: string,
-	queries: Query[]
+	parameters: bulkParams[]
 ): bulkResults {
 	if (Operation[operation] === undefined) {
 		throw new Error(`${operation} is not a valid Bulk operation.`);
 	}
-	if (queries === undefined) {
+	if (parameters === undefined) {
 		throw new Error(
 			`${operation} Bulk operation cannot be performed. Please provide valid parameters.`
 		);
 	}
-	return Operation[operation](queries);
+	return Operation[operation](parameters);
 }
 
 const Operation: { [key: string]: any } = {
-	delete: (queries: Query[]) => {
-		return DeleteUsersBulk(queries);
+	delete: (parameters: bulkParams[]) => {
+		return DeleteUsersBulk(parameters);
+	},
+	update: (parameters: bulkParams[]) => {
+		return UpdateUsersBulk(parameters);
 	},
 };
 
-function DeleteUsersBulk(queries: Query[]): bulkResults {
-	let res: bulkResults = {
+// TODO: Think about refactoring function by abstracting logic into other functions.
+function UpdateUsersBulk(parameters: bulkParams[]): bulkResults {
+	const res: bulkResults = {
 		success: [],
 		failed: [],
+		successfulQueries: [],
 		failedQueries: [],
+		errors: [],
 		message: "",
 	};
-	queries.forEach((query: Query) => {
-		let users: User[] = FindUser(query);
+	parameters.forEach((item: bulkParams) => {
+		const users: User[] = FindUser(item.searchQuery);
 		if (users.length > 0) {
+			res.successfulQueries.push(item);
+			users.forEach((value: User) => {
+				const userIndex: number = Users.findIndex(
+					(object: User) => object.id == value.id
+				);
+				if (userIndex != 1) {
+					item.operationQueries.forEach((query: Query) => {
+						if (value[query.params] === undefined) {
+							res.failed.push(value);
+							res.errors.push(
+								`User with ${
+									item.searchQuery.params == "birthDate"
+										? "date of birth"
+										: `${item.searchQuery.params.replace(/[N]/, " n")}`
+								} ${item.searchQuery.query} does not have a ${
+									query.params
+								}. Please provide valid parameters.`
+							);
+						} else {
+							value[query.params] = query.query;
+							res.success.push(value);
+						}
+					});
+				}
+			});
+		} else {
+			res.failedQueries.push(item);
+		}
+	});
+	res.message = formatBulkOperationMessage(res, "update");
+	return res;
+}
+
+// TODO: Think about refactoring function by abstracting logic into other functions.
+function DeleteUsersBulk(parameters: bulkParams[]): bulkResults {
+	const res: bulkResults = {
+		success: [],
+		failed: [],
+		successfulQueries: [],
+		failedQueries: [],
+		errors: [],
+		message: "",
+	};
+	parameters.forEach((item: bulkParams) => {
+		const users: User[] = FindUser(item.searchQuery);
+		if (users.length > 0) {
+			res.successfulQueries.push(item);
 			users.forEach((value: User) => {
 				const userIndex: number = Users.findIndex(
 					(object: User) => object.id == value.id
@@ -160,50 +217,255 @@ function DeleteUsersBulk(queries: Query[]): bulkResults {
 				}
 			});
 		} else {
-			res.failedQueries.push(query);
+			res.failedQueries.push(item);
 		}
 	});
 	res.message = formatBulkOperationMessage(res, "delete");
 	return res;
 }
 
+// function formatBulkOperationMessage(
+// 	res: bulkResults,
+// 	operation: string
+// ): string {
+// 	const successCases: number = res.success.length;
+// 	const failedCases: number = res.failedQueries.length;
+// 	const successUsers: string =
+// 		successCases > 0
+// 			? `Successfully ${operation}d ${successCases} ${userQuantity(
+// 					successCases
+// 			  )}.\n`
+// 			: "";
+// 	const userPlural: string =
+// 		successCases != 1 ? ` were ${operation}d.\n` : ` was ${operation}d.\n`;
+// 	let deletedUsers: string = usersDeleted(res.success);
+// 	let failedUsers: string = failedDeleted(res.failedQueries);
+// 	const operationalQueriesFails: Query[] = extractQueriesFromBulkParams(
+// 		res.failedQueries
+// 	);
+// 	const successPredicate: string =
+// 		successCases > 0
+// 			? userQuantity(successCases) + " " + deletedUsers + userPlural
+// 			: "";
+// 	const failedUserPronoun: string = userQuantity(failedCases);
+// 	let failedOperationalQueries: string = failedOpsQueries(res)
+// 		? "'s " + opsQueryStringformat(operationalQueriesFails, "update") + ". "
+// 		: ` could not be ${operation}d. `;
+// 	let failedPredicate: string =
+// 		failedCases > 0
+// 			? failedUserPronoun +
+// 			  " with " +
+// 			  failedUsers +
+// 			  failedOperationalQueries +
+// 			  `Make sure ${failedUserPronoun} exist${
+// 					failedCases != 1 ? "" : "s"
+// 			  } or correct parameters are provided.`
+// 			: "";
+// 	failedPredicate =
+// 		res.failed.length == 0 &&
+// 		res.failedQueries.length == 0 &&
+// 		res.success.length == 0
+// 			? `No Users could be ${operation}d. Make sure Users exist or correct parameters are provided.`
+// 			: failedPredicate;
+// 	return (res.message = successUsers + successPredicate + failedPredicate);
+// }
+
+function extractQueriesFromBulkParams(bulkParameters: bulkParams[]): Query[] {
+	const res: Query[] = [];
+	bulkParameters.forEach((bulkObject: bulkParams) => {
+		bulkObject.operationQueries.forEach((queryObject: Query) =>
+			res.push(queryObject)
+		);
+	});
+	return res;
+}
+
 function formatBulkOperationMessage(
-	res: bulkResults,
+	bulkResult: bulkResults,
 	operation: string
 ): string {
-	const successCases: number = res.success.length;
-	const failedCases: number = res.failedQueries.length;
-	const successUsers: string =
-		successCases > 0
-			? `Successfully ${operation}d ${successCases} ${userQuantity(
-					successCases
-			  )}.\n`
-			: "";
-	const userPlural: string =
-		successCases != 1 ? ` were ${operation}d.\n` : ` was ${operation}d.\n`;
-	let deletedUsers: string = usersDeleted(res.success);
-	let failedUsers: string = failedDeleted(res.failedQueries);
-	const successPredicate: string =
-		successCases > 0
-			? userQuantity(successCases) + " " + deletedUsers + userPlural
-			: "";
-	const failedUserPronoun: string = userQuantity(failedCases);
-	let failedPredicate: string =
-		failedCases > 0
-			? failedUserPronoun +
-			  " with " +
-			  failedUsers +
-			  ` could not be ${operation}d. Make sure ${failedUserPronoun} exist${
-					failedCases != 1 ? "" : "s"
-			  } or correct parameters are provided.`
-			: "";
-	failedPredicate =
-		res.failed.length == 0 &&
-		res.failedQueries.length == 0 &&
-		res.success.length == 0
-			? "No Users could be deleted. Make sure Users exist or correct parameters are provided."
-			: failedPredicate;
-	return (res.message = successUsers + successPredicate + failedPredicate);
+	const successCases: number = bulkResult.success.length;
+	const failedCases: number = bulkResult.failed.length;
+	const successQueriesCases: number = bulkResult.successfulQueries.length;
+	const failedQueriesCases: number = bulkResult.failedQueries.length;
+	const errorCases: number = bulkResult.errors.length;
+	const successUsers: User[] = bulkResult.success;
+	const failedUsers: User[] = bulkResult.failed;
+	const failQueries: bulkParams[] = bulkResult.failedQueries;
+	const failErrors: string[] =
+		bulkResult.errors == undefined ? [] : bulkResult.errors;
+	const successHeading: string = formatSuccessHeading(successCases, operation);
+	const successPredicate: string = formatSuccessPredicate(
+		successUsers,
+		operation
+	);
+	const failedHeading: string = formatFailedHeading(failedCases, operation);
+	const failedPredicate: string = formatFailedPredicate(
+		failQueries,
+		operation,
+		failErrors
+	);
+
+	let res: string =
+		successHeading + successPredicate + failedHeading + failedPredicate;
+	return res;
+}
+
+function formatSuccessHeading(successCases: number, operation: string): string {
+	let res: string = "";
+	if (successCases == 0) {
+		return res;
+	}
+	res = `Successfully ${operation}d ${successCases} Users.\n`;
+	return res;
+}
+
+function formatSuccessPredicate(users: User[], operation: string): string {
+	let res: string = "";
+	const numberUsers: number = users.length;
+	const userPronoun: string = numberUsers == 1 ? "User" : "Users";
+	const userVerb: string = numberUsers == 1 ? "was" : "were";
+	if (numberUsers == 0) {
+		return res;
+	}
+	let userList: string = "";
+	users.forEach(
+		(user: User) => (userList += `${user.firstName} ${user.lastName} & `)
+	);
+	userList = userList.substring(0, userList.length - 3)
+	res = `${userPronoun} ${userList} ${userVerb} ${operation}d.\n`;
+	res.substring(0, res.length - 3);
+	return res;
+}
+function formatFailedHeading(failedCases: number, operation: string): string {
+	let res: string = "";
+	if (failedCases == 0) {
+		return res;
+	}
+	const userPronoun: string = failedCases == 1 ? "User" : "Users";
+	res = `${failedCases} ${userPronoun} could not be ${operation}d.`;
+	return res;
+}
+
+function formatFailedPredicate(
+	bulkItems: bulkParams[],
+	operation: string,
+	errors?: string[]
+): string {
+	let res: string = "";
+	const userPronoun: string = bulkItems.length != 1 ? "Users" : "User";
+	const exist: string = userPronoun == "User" ? "exists" : "exist";
+	const hint: string = `Make sure ${userPronoun} ${exist} or correct parameters are provided.`;
+	if (bulkItems.length == 0) {
+		res = `No Users could be ${operation}d. ${hint}`;
+		return res;
+	}
+	bulkItems.forEach((bulkItem: bulkParams) => {
+		const formattedSearchQuery = formatSearchQuery(bulkItem, operation);
+		res = `${userPronoun} with ${formattedSearchQuery} ${hint}`;
+	});
+	return res;
+}
+
+function formatSearchQuery(bulkItem: bulkParams, operation: string): string {
+	let res: string = "";
+	const formattedParam: string = formatQueryParams(bulkItem.searchQuery);
+	res = `${formattedParam} could not be ${operation}d.`;
+	bulkItem.operationQueries.forEach((operationQuery: Query) => {
+		const formattedOperationQueries = formatOperationQuery(operationQuery);
+		const userPronoun: string = bulkItem.operationQueries.length != 1 ? "Users" : "User";
+		res = `${userPronoun} with ${formattedOperationQueries} could not be ${operation}d.`;
+	});
+	return res;
+}
+
+function formatOperationQuery(query: Query): string {
+	let res: string = "";
+	res = `${query.params} ${query.query} & `;
+	res = res.substring(0, res.length - 3);
+	return res;
+}
+
+function formatQueryParams(query: Query): string {
+	const DoB = new Date(query.query.toString());
+	let res: string = "";
+	if (query.params == "birthDate") {
+		if (validateDate(DoB)) {
+			res = `date of birth ${formatDate(DoB)}`;
+			return res;
+		} else {
+			res = "invalid date of birth";
+			return res;
+		}
+	}
+	res = `${query.params.replace(/[N]/, " n")} ${query.query}`;
+	return res;
+}
+
+function formatDate(date: Date): string {
+	let res: string = "";
+	res = `${Months[date.getMonth()]} ${date.getDate()} ${date.getFullYear()}`;
+	return res;
+}
+
+function FormatOperationalQueries(queries: Query[], operation): string {
+	let res: string = "";
+	let removedChars: number = 4;
+	queries.forEach((query: Query, index: number) => {
+		if (index != 0) {
+			if (query.params == "birthDate") {
+				res += `date of birth could not be ${operation}d to ${query.query} or `;
+			} else {
+				res += `${query.params.replace(/[N]/, " n")} be ${operation}d to ${
+					query.query
+				} or `;
+			}
+		} else {
+			if (query.params == "birthDate") {
+				res += `date of birth could not be ${operation}d to ${query.query} neirhter could the `;
+			} else {
+				res += `${query.params.replace(
+					/[N]/,
+					" n"
+				)} could not be ${operation}d to ${query.query} neither could the `;
+			}
+		}
+		removedChars = index != 0 ? removedChars : 19;
+	});
+	return res;
+}
+
+// function opsQueryStringformat(queries: Query[], operation: string): string {
+// 	let res: string = "";
+// 	let removedChars: number = 0;
+// 	queries.forEach((query: Query, index: number) => {
+// 		if (index != 0) {
+// 			if (query.params == "birthDate") {
+// 				res += `date of birth could be ${operation}d to ${query.query} or `;
+// 			} else {
+// 				res += `${query.params.replace(/[N]/, " n")} be ${operation}d to ${
+// 					query.query
+// 				} or `;
+// 			}
+// 		} else {
+// 			if (query.params == "birthDate") {
+// 				res += `date of birth could not be ${operation}d to ${query.query} neither could the `;
+// 			} else {
+// 				res += `${query.params.replace(
+// 					/[N]/,
+// 					" n"
+// 				)} could not be ${operation}d to ${query.query} neither could the `;
+// 			}
+// 		}
+// 		removedChars = index != 0 ? 4 : 19;
+// 	});
+// 	return res.substring(0, res.length - removedChars);
+// }
+
+function failedOpsQueries(res: bulkResults): boolean {
+	return res.failedQueries.some(
+		(element) => element.operationQueries.length > 0
+	);
 }
 
 function userQuantity(evaluation: number): string {
@@ -221,11 +483,11 @@ function usersDeleted(users: User[]): string {
 	return res;
 }
 
-function failedDeleted(queries: Query[]): string {
+function failedDeleted(items: bulkParams[]): string {
 	let res: string = "";
-	if (queries.length > 0) {
-		queries.forEach((query: Query) => {
-			res += failedFormattedMessage(query);
+	if (items.length > 0) {
+		items.forEach((item: bulkParams) => {
+			res += failedFormattedMessage(item.searchQuery);
 		});
 		return res.substring(0, res.length - 3);
 	}
@@ -263,60 +525,6 @@ const Months: string[] = [
 	"Deceåmber",
 ];
 
-function formatBulkMessage(res: bulkResults, operation: string): string {
-	const successNum: number = res.success.length;
-	const failNum: number = res.failed.length;
-	const successPlural: string = successNum != 1 ? "s" : "";
-	const failPlural: string = failNum != 1 ? "s" : "";
-	const successUsersPrePronoun: string =
-		successNum === 0 ? "No" : successNum != 1 ? "Users" : "User";
-	const successUserFullNames: string = usersFullName(res.success);
-	const successUserFinalPronoun: string = successNum != 1 ? "were" : "was";
-	const failUserFullNames: string = usersFullName(res.failed);
-
-	return (res.message =
-		"Successfully " +
-		operation +
-		" " +
-		successNum +
-		" User" +
-		successPlural +
-		" with " +
-		failNum +
-		" failed delete operation" +
-		failPlural +
-		".\n" +
-		successUsersPrePronoun +
-		" " +
-		successUserFullNames +
-		" " +
-		successUserFinalPronoun +
-		" " +
-		operation +
-		"." +
-		"\n" +
-		"User" +
-		failPlural +
-		" " +
-		failUserFullNames +
-		" could not be " +
-		operation +
-		". Make sure User" +
-		failPlural +
-		" exists or correct parameters are provided.");
-}
-
-function usersFullName(user: User[]): string {
-	let res: string = "";
-	if (user.length > 0) {
-		user.forEach(
-			(user) => (res += user.firstName + " " + user.lastName + " & ")
-		);
-		return res.substring(0, res.length - 3);
-	}
-	return (res = "Users");
-}
-
 export function ClearUsers(): boolean {
 	Users = [];
 	id = 1;
@@ -346,14 +554,4 @@ function validateUsers(user: User): boolean {
 		validateNameString(user.lastName) &&
 		validateDate(user.birthDate)
 	);
-}
-
-function exactMatch(user: User): boolean {
-	return Users.some(
-		(value: User) => value.id == user.id && value.firstName == user.firstName
-	);
-}
-
-function isValid(user: User): Boolean {
-	return validateUsers(user) && exactMatch(user);
 }

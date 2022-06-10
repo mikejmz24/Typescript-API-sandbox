@@ -9,6 +9,7 @@ import {
 	bulkResults,
 	BulkOperation,
 	Query,
+	bulkParams,
 } from "./api";
 
 const DT_TrainOfThought: Date = new Date("2003-11-11");
@@ -18,32 +19,34 @@ const Epica_ThePhantomAgony: Date = new Date("2003-6-5");
 const DM_WorldMisanthropy: Date = new Date("2002-5-28");
 
 describe("CreateUser creates users, adds them to the Users array and returns the created User", () => {
+	let testUser: User;
+	let testUsers: User[];
 	beforeAll(() => {
 		ClearUsers();
 	});
 	it("Should create User Jack Daniels and returns its id, firstname, lastname & birthDate", () => {
-		const testUser1: User = {
+		testUser = {
 			id: 1,
 			firstName: "Jack",
 			lastName: "Daniels",
 			birthDate: DT_TrainOfThought,
 		};
-		expect(CreateUser("Jack", "Daniels", DT_TrainOfThought)).toEqual(testUser1);
+		expect(CreateUser("Jack", "Daniels", DT_TrainOfThought)).toEqual(testUser);
 	});
 	it("Should create User Jim Bean with a different ID than User Jack Daniels", () => {
-		const Users: User[] = ViewUsers();
+		testUsers = ViewUsers();
 		CreateUser("Jim", "Bean", Kamelot_Epica);
-		expect(Users[0].id).not.toBe(Users[1].id);
+		expect(testUsers[0].id).not.toBe(testUsers[1].id);
 	});
 	it("Should return an error when an invalid parameter like an object is provided", () => {
-		const testUser1: User = {
+		testUser = {
 			id: 1,
 			firstName: "Jack",
 			lastName: "Daniels",
 			birthDate: DT_TrainOfThought,
 		};
 		expect(() => {
-			CreateUser(testUser1.toString(), "name", DT_TrainOfThought);
+			CreateUser(testUser.toString(), "name", DT_TrainOfThought);
 		}).toThrowError(
 			"User cannot be created with invalid parameters. Please provide a valid first name, last name & date of birth"
 		);
@@ -51,6 +54,7 @@ describe("CreateUser creates users, adds them to the Users array and returns the
 });
 
 describe("ViewUsers returns a list of all created Users", () => {
+	let testUsers: User[];
 	beforeAll(() => {
 		ClearUsers();
 	});
@@ -58,21 +62,23 @@ describe("ViewUsers returns a list of all created Users", () => {
 		expect(ViewUsers()).toEqual([]);
 	});
 	it("Should return an array with Users Jack Daniels & Jim Bean's data", () => {
-		const testUser1: User = {
-			id: 1,
-			firstName: "Jack",
-			lastName: "Daniels",
-			birthDate: DT_TrainOfThought,
-		};
-		const testUser2: User = {
-			id: 2,
-			firstName: "Jim",
-			lastName: "Bean",
-			birthDate: Kamelot_Epica,
-		};
+		testUsers = [
+			{
+				id: 1,
+				firstName: "Jack",
+				lastName: "Daniels",
+				birthDate: DT_TrainOfThought,
+			},
+			{
+				id: 2,
+				firstName: "Jim",
+				lastName: "Bean",
+				birthDate: Kamelot_Epica,
+			},
+		];
 		CreateUser("Jack", "Daniels", DT_TrainOfThought);
 		CreateUser("Jim", "Bean", Kamelot_Epica);
-		expect(ViewUsers()).toEqual([testUser1, testUser2]);
+		expect(ViewUsers()).toEqual(testUsers);
 	});
 });
 
@@ -412,15 +418,21 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 // TODO: review testing for transactions, or consider executing individual tasks
 describe("DeleteUser removes Users from the Users array and returns the deleted Users's data", () => {
 	let query: Query;
+	let testUsers: User[];
 	beforeAll(() => {
 		ClearUsers();
+	});
+	beforeEach(() => {
+		ClearUsers();
+		query = { params: "", query: "" };
+		testUsers = [];
 	});
 	it("Should return an empty array when User with full name Courvoisier VSOP is not found", () => {
 		query = { params: "fullName", query: "Courvosier VSOP" };
 		expect(DeleteUser(FindUser(query))).toEqual([]);
 	});
 	it("Should return an error when the user to be deleted contains an invalid first name", () => {
-		const testUser10: User[] = [
+		testUsers = [
 			{
 				id: 1,
 				firstName: "Remy –",
@@ -429,213 +441,279 @@ describe("DeleteUser removes Users from the Users array and returns the deleted 
 			},
 		];
 		expect(() => {
-			DeleteUser(testUser10);
+			DeleteUser(testUsers);
 		}).toThrowError(
 			"User cannot be deleted with invalid parameters. Please provide a valid first name, last name & date of birth"
 		);
 	});
 	it("Should return an error when the user to be deleted contains an invalid last name", () => {
-		const testUser11: User[] = [
+		testUsers = [
 			{
-				id: 2,
+				id: 1,
 				firstName: "Remy",
 				lastName: "Martin!",
 				birthDate: DT_TrainOfThought,
 			},
 		];
 		expect(() => {
-			DeleteUser(testUser11);
+			DeleteUser(testUsers);
 		}).toThrowError(
 			"User cannot be deleted with invalid parameters. Please provide a valid first name, last name & date of birth"
 		);
 	});
 	it("Should return an error when the user to be deleted contains an invalid date of birth", () => {
-		const testUser12: User[] = [
+		testUsers = [
 			{
-				id: 3,
+				id: 1,
 				firstName: "Remy",
 				lastName: "Martin",
 				birthDate: new Date("I like turtles"),
 			},
 		];
 		expect(() => {
-			DeleteUser(testUser12);
+			DeleteUser(testUsers);
 		}).toThrowError(
 			"User cannot be deleted with invalid parameters. Please provide a valid first name, last name & date of birth"
 		);
 	});
 	it("Should return an error when the third user to be deleted contains an invalid last name", () => {
-		const testUser13: User[] = [
+		testUsers = [
 			{
-				id: 4,
+				id: 1,
 				firstName: "Dom",
 				lastName: "Perignon",
 				birthDate: SX_Odyssey,
 			},
 			{
-				id: 5,
+				id: 2,
 				firstName: "Glen",
 				lastName: "Moray",
 				birthDate: Epica_ThePhantomAgony,
 			},
 			{
-				id: 6,
+				id: 3,
 				firstName: "Bunnahabhain",
 				lastName: "& Glenfiddich",
 				birthDate: Kamelot_Epica,
 			},
 		];
 		expect(() => {
-			DeleteUser(testUser13);
+			DeleteUser(testUsers);
 		}).toThrowError(
 			"User cannot be deleted with invalid parameters. Please provide a valid first name, last name & date of birth"
 		);
 	});
 	it("Should delete User Jack Daniels when searching by its date of birth June 5th, 2003", () => {
-		// CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
-		// query = { params: "birthDate", query: Epica_ThePhantomAgony.toString() };
-		// testUser = FindUser(query);
-
 		query = { params: "birthDate", query: Epica_ThePhantomAgony.toString() };
-		const testUser1 = {
-			id: 1,
-			firstName: "Jack",
-			lastName: "Daniels",
-			birthDate: Epica_ThePhantomAgony,
-		};
+		testUsers = [
+			{
+				id: 1,
+				firstName: "Jack",
+				lastName: "Daniels",
+				birthDate: Epica_ThePhantomAgony,
+			},
+		];
 		CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
-		expect(DeleteUser(FindUser(query))).toEqual([testUser1]);
+		expect(DeleteUser(FindUser(query))).toEqual(testUsers);
 	});
 	it("Should delete User Jim Bean and when searching the remaining users it should return every User except Jim Bean", () => {
 		query = { params: "fullName", query: "Jim Bean" };
-		const testUser2 = {
-			id: 2,
-			firstName: "Jack",
-			lastName: "Daniels",
-			birthDate: Epica_ThePhantomAgony,
-		};
-		const testUser3 = {
-			id: 3,
-			firstName: "Don Julio",
-			lastName: "Reposado",
-			birthDate: SX_Odyssey,
-		};
-		const testUser4 = {
-			id: 4,
-			firstName: "Johnnie",
-			lastName: "Walker Blue",
-			birthDate: Kamelot_Epica,
-		};
+		testUsers = [
+			{
+				id: 1,
+				firstName: "Jack",
+				lastName: "Daniels",
+				birthDate: Epica_ThePhantomAgony,
+			},
+			{
+				id: 2,
+				firstName: "Don Julio",
+				lastName: "Reposado",
+				birthDate: SX_Odyssey,
+			},
+			{
+				id: 3,
+				firstName: "Johnnie",
+				lastName: "Walker Blue",
+				birthDate: Kamelot_Epica,
+			},
+		];
 		CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
 		CreateUser("Don Julio", "Reposado", SX_Odyssey);
 		CreateUser("Johnnie", "Walker Blue", Kamelot_Epica);
 		CreateUser("Jim", "Bean", DT_TrainOfThought);
 		DeleteUser(FindUser(query));
-		expect(ViewUsers()).toEqual([testUser2, testUser3, testUser4]);
+		expect(ViewUsers()).toEqual(testUsers);
 	});
 });
 
 describe("DeleteUsersBulk deletes a group of Users from the Users array and returns a message with the number of success and failed operations including the Users' data", () => {
+	let searchingQuery: Query;
+	let searchingQueries: Query[];
+	let bulkParam: bulkParams;
+	let parameters: bulkParams[];
 	let testUser: User[];
 	let results: bulkResults;
-	let queries: Query[];
-	let query: Query;
 
 	beforeEach(() => {
 		ClearUsers();
-		queries = [];
+		searchingQuery = { params: "", query: "" };
+		searchingQueries = [];
+		bulkParam = {
+			searchQuery: { params: "", query: "" },
+			operationQueries: [],
+		};
+		parameters = [];
 		testUser = [];
 		results = {
 			success: [],
 			failed: [],
+			successfulQueries: [],
 			failedQueries: [],
+			errors: [],
 			message: "",
 		};
 	});
-	// // TODO: Review a way to handle missed bulk operations or how to return more descriptive messages.
-	it("Should return not a valid Bulk operation error message when entered Bulk action remove with undefined queries", () => {
-		queries = undefined;
+	it("Should return not a valid Bulk operation error message when entered Bulk action remove with undefined parameters", () => {
+		parameters = undefined;
 		expect(() => {
-			BulkOperation("remove", queries);
+			BulkOperation("remove", parameters);
 		}).toThrowError("remove is not a valid Bulk operation.");
 	});
-	it("Should return a Bulk operation cannot be performed. Please provide valid parameters error message when entered Bulk action delete with undefined queries", () => {
-		queries = undefined;
+	it("Should return a Bulk operation cannot be performed. Please provide valid parameters error message when entered Bulk action delete with undefined parameters", () => {
+		parameters = undefined;
 		expect(() => {
-			BulkOperation("delete", queries);
+			BulkOperation("delete", parameters);
 		}).toThrowError(
 			"delete Bulk operation cannot be performed. Please provide valid parameters."
 		);
 	});
-	it("Should return not a valid Bulk operation error message when entered Bulk action remove with empty queries array", () => {
+	it("Should return not a valid Bulk operation error message when entered Bulk action remove with empty parameters array", () => {
 		expect(() => {
-			BulkOperation("remove", queries);
+			BulkOperation("remove", parameters);
 		}).toThrowError("remove is not a valid Bulk operation.");
 	});
-	it("Should return an empty message when entered Bulk action delete with an empty queries array", () => {
+	it("Should return an empty message when entered Bulk action delete with an empty parameters array", () => {
+		parameters = [];
 		results = {
 			success: [],
 			failed: [],
+			successfulQueries: [],
 			failedQueries: [],
+			errors: [],
 			message:
 				"No Users could be deleted. Make sure Users exist or correct parameters are provided.",
 		};
-		expect(BulkOperation("delete", queries)).toEqual(results);
+		expect(BulkOperation("delete", parameters)).toEqual(results);
 	});
 	it("Should fail to delete non-existing User with full name Captain Morgan", () => {
-		query = { params: "fullName", query: "Captain Morgan" };
-		queries = queries.concat(query);
-		testUser = FindUser(query);
+		searchingQuery = { params: "fullName", query: "Captain Morgan" };
+		searchingQueries = searchingQueries.concat(searchingQuery);
+		testUser = FindUser(searchingQuery);
+		parameters = [
+			{
+				searchQuery: searchingQuery,
+				operationQueries: [],
+			},
+		];
 		results = {
 			success: [],
 			failed: testUser,
-			failedQueries: queries,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
 			message:
 				"User with full name Captain Morgan could not be deleted. Make sure User exists or correct parameters are provided.",
 		};
-		expect(BulkOperation("delete", queries)).toEqual(results);
+		expect(BulkOperation("delete", parameters)).toEqual(results);
 	});
 	it("Should fail to delete non-existing User with first name Johnny! Walkers", () => {
-		query = { params: "firstName", query: "Johnny! Walkers" };
-		queries = queries.concat(query);
-		testUser = FindUser(query);
+		searchingQuery = { params: "firstName", query: "Johnny! Walkers" };
+		searchingQueries = searchingQueries.concat(searchingQuery);
+		testUser = FindUser(searchingQuery);
+		parameters = [
+			{
+				searchQuery: searchingQuery,
+				operationQueries: [],
+			},
+		];
 		results = {
 			success: [],
 			failed: testUser,
-			failedQueries: queries,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
 			message:
 				"User with first name Johnny! Walkers could not be deleted. Make sure User exists or correct parameters are provided.",
 		};
-		expect(BulkOperation("delete", queries)).toEqual(results);
+		expect(BulkOperation("delete", parameters)).toEqual(results);
 	});
 	it("Should fail to delete non-existing User with last name – Pérignon", () => {
-		query = { params: "lastName", query: "– Pérignon" };
-		queries = queries.concat(query);
-		testUser = FindUser(query);
+		searchingQuery = { params: "lastName", query: "– Pérignon" };
+		searchingQueries = searchingQueries.concat(searchingQuery);
+		testUser = FindUser(searchingQuery);
+		parameters = [
+			{
+				searchQuery: searchingQuery,
+				operationQueries: [],
+			},
+		];
 		results = {
 			success: [],
 			failed: testUser,
-			failedQueries: queries,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
 			message:
 				"User with last name – Pérignon could not be deleted. Make sure User exists or correct parameters are provided.",
 		};
-		expect(BulkOperation("delete", queries)).toEqual(results);
+		expect(BulkOperation("delete", parameters)).toEqual(results);
 	});
 	it("Should fail to delete non-existing User with an invalid date of birth", () => {
-		query = {
+		searchingQuery = {
 			params: "birthDate",
 			query: new Date("I like turtles").toString(),
 		};
-		queries = queries.concat(query);
-		testUser = FindUser(query);
+		searchingQueries = searchingQueries.concat(searchingQuery);
+		testUser = FindUser(searchingQuery);
+		parameters = [
+			{
+				searchQuery: searchingQuery,
+				operationQueries: [],
+			},
+		];
 		results = {
 			success: [],
 			failed: testUser,
-			failedQueries: queries,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
 			message:
 				"User with invalid date of birth could not be deleted. Make sure User exists or correct parameters are provided.",
 		};
-		expect(BulkOperation("delete", queries)).toEqual(results);
+		expect(BulkOperation("delete", parameters)).toEqual(results);
+	});
+	it("Should fail to delete non-existing User with date of birth May 29, 2000", () => {
+		const BraveNewWorld: Date = new Date("2000-5-29");
+		searchingQuery = { params: "birthDate", query: BraveNewWorld.toString() };
+		searchingQueries = searchingQueries.concat(searchingQuery);
+		testUser = FindUser(searchingQuery);
+		parameters = [
+			{
+				searchQuery: searchingQuery,
+				operationQueries: [],
+			},
+		];
+		results = {
+			success: [],
+			failed: testUser,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
+			message:
+				"User with date of birth May 29 2000 could not be deleted. Make sure User exists or correct parameters are provided.",
+		};
+		expect(BulkOperation("delete", parameters)).toEqual(results);
 	});
 	it("Should fail to delete non-existing User Jack Daniels when searching by first name when there are multiple users registered", () => {
 		CreateUser("Johnny", "Walker", Epica_ThePhantomAgony);
@@ -643,17 +721,25 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 		CreateUser("Jose", "Cuervo Tradicional", DT_TrainOfThought);
 		CreateUser("Jim", "Bean", DM_WorldMisanthropy);
 		CreateUser("Don", "Pedro", Kamelot_Epica);
-		query = { params: "firstName", query: "Jack" };
-		queries = queries.concat(query);
-		testUser = FindUser(query);
+		searchingQuery = { params: "firstName", query: "Jack" };
+		searchingQueries = searchingQueries.concat(searchingQuery);
+		testUser = FindUser(searchingQuery);
+		parameters = [
+			{
+				searchQuery: searchingQuery,
+				operationQueries: [],
+			},
+		];
 		results = {
 			success: [],
 			failed: testUser,
-			failedQueries: queries,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
 			message:
 				"User with first name Jack could not be deleted. Make sure User exists or correct parameters are provided.",
 		};
-		expect(BulkOperation("delete", queries)).toEqual(results);
+		expect(BulkOperation("delete", parameters)).toEqual(results);
 	});
 	it("Should fail to delete non-existing User Jack Daniels when searching by last name when there are multiple users registered", () => {
 		CreateUser("Johnny", "Walker", Epica_ThePhantomAgony);
@@ -661,17 +747,25 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 		CreateUser("Jose", "Cuervo Tradicional", DT_TrainOfThought);
 		CreateUser("Jim", "Bean", DM_WorldMisanthropy);
 		CreateUser("Don", "Pedro", Kamelot_Epica);
-		query = { params: "lastName", query: "Daniels" };
-		queries = queries.concat(query);
-		testUser = FindUser(query);
+		searchingQuery = { params: "lastName", query: "Daniels" };
+		searchingQueries = searchingQueries.concat(searchingQuery);
+		testUser = FindUser(searchingQuery);
+		parameters = [
+			{
+				searchQuery: searchingQuery,
+				operationQueries: [],
+			},
+		];
 		results = {
 			success: [],
 			failed: testUser,
-			failedQueries: queries,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
 			message:
 				"User with last name Daniels could not be deleted. Make sure User exists or correct parameters are provided.",
 		};
-		expect(BulkOperation("delete", queries)).toEqual(results);
+		expect(BulkOperation("delete", parameters)).toEqual(results);
 	});
 	it("Should fail to delete non-existing User Jack Daniels when searching by full name when there are multiple users registered", () => {
 		CreateUser("Johnny", "Walker", Epica_ThePhantomAgony);
@@ -679,17 +773,25 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 		CreateUser("Jose", "Cuervo Tradicional", DT_TrainOfThought);
 		CreateUser("Jim", "Bean", DM_WorldMisanthropy);
 		CreateUser("Don", "Pedro", Kamelot_Epica);
-		query = { params: "fullName", query: "Jack Daniels" };
-		queries = queries.concat(query);
-		testUser = FindUser(query);
+		searchingQuery = { params: "fullName", query: "Jack Daniels" };
+		searchingQueries = searchingQueries.concat(searchingQuery);
+		testUser = FindUser(searchingQuery);
+		parameters = [
+			{
+				searchQuery: searchingQuery,
+				operationQueries: [],
+			},
+		];
 		results = {
 			success: [],
 			failed: testUser,
-			failedQueries: queries,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
 			message:
 				"User with full name Jack Daniels could not be deleted. Make sure User exists or correct parameters are provided.",
 		};
-		expect(BulkOperation("delete", queries)).toEqual(results);
+		expect(BulkOperation("delete", parameters)).toEqual(results);
 	});
 	it("Should fail to delete non-existing User Jack Daniels when searching by date of birth when there are multiple users registered", () => {
 		CreateUser("Johnny", "Walker", Epica_ThePhantomAgony);
@@ -698,17 +800,25 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 		CreateUser("Jim", "Bean", DM_WorldMisanthropy);
 		CreateUser("Don", "Pedro", Kamelot_Epica);
 		const COB_Hatebreeder = new Date("1999-4-26");
-		query = { params: "birthDate", query: COB_Hatebreeder.toString() };
-		queries = queries.concat(query);
-		testUser = FindUser(query);
+		searchingQuery = { params: "birthDate", query: COB_Hatebreeder.toString() };
+		searchingQueries = searchingQueries.concat(searchingQuery);
+		testUser = FindUser(searchingQuery);
+		parameters = [
+			{
+				searchQuery: searchingQuery,
+				operationQueries: [],
+			},
+		];
 		results = {
 			success: [],
 			failed: testUser,
-			failedQueries: queries,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
 			message:
 				"User with date of birth April 26 1999 could not be deleted. Make sure User exists or correct parameters are provided.",
 		};
-		expect(BulkOperation("delete", queries)).toEqual(results);
+		expect(BulkOperation("delete", parameters)).toEqual(results);
 	});
 	it("Should delete 10 Users and fail to delete 3 non-existing users", () => {
 		CreateUser("Jack", "Daniels", Epica_ThePhantomAgony);
@@ -721,41 +831,224 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 		CreateUser("Johnnie", "Walker Blue", DM_WorldMisanthropy);
 		CreateUser("Johnnie", "Walker Green", Epica_ThePhantomAgony);
 		CreateUser("Bacardi", "Limon", SX_Odyssey);
-		queries = queries.concat({ params: "firstName", query: "Jack" });
-		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
-		queries = queries.concat({ params: "lastName", query: "Bean" });
-		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
-		queries = queries.concat({ params: "firstName", query: "Johnnie" });
-		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
-		queries = queries.concat({ params: "fullName", query: "Don Julio" });
-		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
-		queries = queries.concat({ params: "lastName", query: "Cuervo" });
-		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
-		queries = queries.concat({ params: "firstName", query: "Pappy" });
-		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
-		queries = queries.concat({ params: "fullName", query: "Bacardi Limon" });
-		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
-		// failed users
-		queries = queries.concat({ params: "fullName", query: "Don Pedro" });
-		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
-		queries = queries.concat({ params: "lastName", query: "Regal" });
-		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
-		queries = queries.concat({ params: "firstName", query: "William" });
-		testUser = testUser.concat(FindUser(queries[queries.length - 1]));
+
+		let queryArray: Query[] = [
+			{ params: "firstName", query: "Jack" },
+			{ params: "lastName", query: "Bean" },
+			{ params: "firstName", query: "Johnnie" },
+			{ params: "fullName", query: "Don Julio" },
+			{ params: "lastName", query: "Cuervo" },
+			{ params: "firstName", query: "Pappy" },
+			{ params: "fullName", query: "Bacardi Limon" },
+			// failed users
+			{ params: "fullName", query: "Don Pedro" },
+			{ params: "lastName", query: "Regal" },
+			{ params: "firstName", query: "William" },
+		];
+		queryArray.forEach((item: Query) => {
+			searchingQueries = searchingQueries.concat(item);
+			testUser = testUser.concat(
+				FindUser(searchingQueries[searchingQueries.length - 1])
+			);
+			bulkParam = {
+				searchQuery: item,
+				operationQueries: [],
+			};
+			parameters.push(bulkParam);
+		});
+
 		results = {
 			success: testUser,
 			failed: [],
-			failedQueries: [
-				{ params: "fullName", query: "Don Pedro" },
-				{ params: "lastName", query: "Regal" },
-				{ params: "firstName", query: "William" },
+			successfulQueries: [
+				{
+					searchQuery: { params: "firstName", query: "Jack" },
+					operationQueries: [],
+				},
+				{
+					searchQuery: { params: "lastName", query: "Bean" },
+					operationQueries: [],
+				},
+				{
+					searchQuery: { params: "firstName", query: "Johnnie" },
+					operationQueries: [],
+				},
+				{
+					searchQuery: { params: "fullName", query: "Don Julio" },
+					operationQueries: [],
+				},
+				{
+					searchQuery: { params: "lastName", query: "Cuervo" },
+					operationQueries: [],
+				},
+				{
+					searchQuery: { params: "firstName", query: "Pappy" },
+					operationQueries: [],
+				},
+				{
+					searchQuery: { params: "fullName", query: "Bacardi Limon" },
+					operationQueries: [],
+				},
 			],
+			failedQueries: [
+				{
+					searchQuery: { params: "fullName", query: "Don Pedro" },
+					operationQueries: [],
+				},
+				{
+					searchQuery: { params: "lastName", query: "Regal" },
+					operationQueries: [],
+				},
+				{
+					searchQuery: { params: "firstName", query: "William" },
+					operationQueries: [],
+				},
+			],
+			errors: [],
 			message:
 				"Successfully deleted 10 Users.\n" +
 				"Users Jack Daniels & Jim Bean & Johnnie Walker & Johnnie Walker Black & Johnnie Walker Blue & Johnnie Walker Green & Don Julio & Jose Cuervo & Pappy van Winkle & Bacardi Limon were deleted.\n" +
 				"Users with full name Don Pedro & last name Regal & first name William could not be deleted. Make sure Users exist or correct parameters are provided.",
 		};
-		expect(BulkOperation("delete", queries)).toEqual(results);
+		expect(BulkOperation("delete", parameters)).toEqual(results);
+	});
+});
+
+describe("UpdateUsersBulk updates a group of Users from the Users array and returns a message with the number of success and failed operations includinf the Users' data", () => {
+	let searchingQuery: Query;
+	let searchingQueries: Query[];
+	let operationalQuery: Query;
+	let operationalQueries: Query[];
+	let bulkParam: bulkParams;
+	let parameters: bulkParams[];
+	let testUsers: User[];
+	let results: bulkResults;
+
+	beforeEach(() => {
+		ClearUsers();
+		searchingQuery = { params: "", query: "" };
+		searchingQueries = [];
+		operationalQuery = { params: "", query: "" };
+		operationalQueries = [];
+		bulkParam = {
+			searchQuery: { params: "", query: "" },
+			operationQueries: [],
+		};
+		parameters = [];
+		testUsers = [];
+		results = {
+			success: [],
+			failed: [],
+			successfulQueries: [],
+			failedQueries: [],
+			errors: [],
+			message: "",
+		};
+	});
+	it("Should return a not valid Bulk operation error message when entered Bulk action change with undefined parameters", () => {
+		parameters = undefined;
+		expect(() => {
+			BulkOperation("change", parameters);
+		}).toThrowError("change is not a valid Bulk operation.");
+	});
+	it("Should return a Bulk operation cannot be performed. Please provide valid parameters error message when entered bulk action update with undefined parameters", () => {
+		parameters = undefined;
+		expect(() => {
+			BulkOperation("update", parameters);
+		}).toThrowError(
+			"update Bulk operation cannot be performed. Please provide valid parameters."
+		);
+	});
+	it("Should return not a valid Bulk operatoin error message when entered Bulk action change with empty parameters", () => {
+		expect(() => {
+			BulkOperation("change", parameters);
+		}).toThrowError("change is not a valid Bulk operation.");
+	});
+	it("Should return an empty message when entered Bulk action update with empty parameters", () => {
+		results = {
+			success: [],
+			failed: [],
+			successfulQueries: [],
+			failedQueries: [],
+			errors: [],
+			message:
+				"No Users could be updated. Make sure Users exist or correct parameters are provided.",
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
+	});
+	it("Should fail to update non-existing User with full name Evan Williams' non-existing nick name parameter", () => {
+		searchingQuery = { params: "fullName", query: "Evan Williams" };
+		operationalQueries = [{ params: "nickName", query: "100-proof" }];
+		testUsers = FindUser(searchingQuery);
+		bulkParam = {
+			searchQuery: searchingQuery,
+			operationQueries: operationalQueries,
+		};
+		parameters.push(bulkParam);
+		results = {
+			success: [],
+			failed: testUsers,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
+			message:
+				"User with full name Evan Williams's nick name could not be updated to 100-proof. Make sure User exists or correct parameters are provided.",
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
+	});
+	it("Should fail to update User Ron Solera's non-existing parameter nick name and return a not a valid parameter error message", () => {
+		CreateUser("Ron", "Solera", SX_Odyssey);
+		searchingQuery = { params: "firstName", query: "Ron" };
+		operationalQueries = [
+			{
+				params: "nickName",
+				query: "Dorado 1873",
+			},
+		];
+		testUsers = FindUser(searchingQuery);
+		bulkParam = {
+			searchQuery: searchingQuery,
+			operationQueries: operationalQueries,
+		};
+		parameters.push(bulkParam);
+		results = {
+			success: [],
+			failed: testUsers,	
+			successfulQueries: parameters,
+			failedQueries: [],
+			errors: [
+				"User with first name Ron does not have a nickName. Please provide valid parameters."
+			],
+			message:
+				"User with first name Ron's nick name could not be updated to Dorado 1873. Make sure User exists or correct parameters are provided.",
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
+	});
+	it("Should fail to update non-existing User with full name Captain Morgan's first & last name", () => {
+		searchingQuery = { params: "fullName", query: "Captain Morgan" };
+		operationalQueries = [
+			{
+				params: "firstName",
+				query: "Kraken",
+			},
+			{ params: "lastName", query: "Black" },
+		];
+		testUsers = FindUser(searchingQuery);
+		bulkParam = {
+			searchQuery: searchingQuery,
+			operationQueries: operationalQueries,
+		};
+		parameters.push(bulkParam);
+		results = {
+			success: [],
+			failed: testUsers,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
+			message:
+				"User with full name Captain Morgan's first name could not be updated to Kraken neither could the last name be updated to Black. Make sure User exists or correct parameters are provided.",
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
 	});
 });
 
