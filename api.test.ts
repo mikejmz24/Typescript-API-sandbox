@@ -6,10 +6,10 @@ import {
 	FindUser,
 	UpdateUser,
 	DeleteUser,
-	bulkResults,
+	BulkResults,
 	BulkOperation,
 	Query,
-	bulkParams,
+	BulkParams,
 } from "./api";
 
 const DT_TrainOfThought: Date = new Date("2003-11-11");
@@ -550,10 +550,10 @@ describe("DeleteUser removes Users from the Users array and returns the deleted 
 describe("DeleteUsersBulk deletes a group of Users from the Users array and returns a message with the number of success and failed operations including the Users' data", () => {
 	let searchingQuery: Query;
 	let searchingQueries: Query[];
-	let bulkParam: bulkParams;
-	let parameters: bulkParams[];
+	let bulkParam: BulkParams;
+	let parameters: BulkParams[];
 	let testUser: User[];
-	let results: bulkResults;
+	let results: BulkResults;
 
 	beforeEach(() => {
 		ClearUsers();
@@ -919,10 +919,10 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 	let searchingQueries: Query[];
 	let operationalQuery: Query;
 	let operationalQueries: Query[];
-	let bulkParam: bulkParams;
-	let parameters: bulkParams[];
+	let bulkParam: BulkParams;
+	let parameters: BulkParams[];
 	let testUsers: User[];
-	let results: bulkResults;
+	let results: BulkResults;
 
 	beforeEach(() => {
 		ClearUsers();
@@ -1013,11 +1013,18 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 		parameters.push(bulkParam);
 		results = {
 			success: [],
-			failed: testUsers,	
+			failed: testUsers,
 			successfulQueries: parameters,
 			failedQueries: [],
 			errors: [
-				"User with first name Ron does not have a nickName. Please provide valid parameters."
+				{
+					bulkItem: {
+						searchQuery: searchingQuery,
+						operationQueries: operationalQueries,
+					},
+					message:
+						"User with first name Ron does not have a nickName. Please provide valid parameters.",
+				},
 			],
 			message:
 				"User with first name Ron's nick name could not be updated to Dorado 1873. Make sure User exists or correct parameters are provided.",
