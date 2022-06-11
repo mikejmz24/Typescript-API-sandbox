@@ -1057,6 +1057,29 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 		};
 		expect(BulkOperation("update", parameters)).toEqual(results);
 	});
+	it("Should fail to update non-existing User with date of birth November 11, 2003 first & last name", () => {
+		searchingQuery =  { params: "birthDate", query: DT_TrainOfThought.toString() };
+		operationalQueries = [
+			{ params: "firstName", query: "Lillet" },
+			{ params: "lastName", query: "Blanc" },
+		];
+		testUsers = FindUser(searchingQuery);
+		bulkParam = {
+			searchQuery: searchingQuery,
+			operationQueries: operationalQueries,
+		};
+		parameters.push(bulkParam);
+		results = {
+			success: [],
+			failed: testUsers,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
+			message: 
+				"User with date of birth November 10 2003's first name could not be updated to Lillet neither could the last name be updated to Blanc. Make sure User exists or correct parameters are provided."
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
+	});
 });
 
 // run tests with the "npx jest" commmand in the terminal

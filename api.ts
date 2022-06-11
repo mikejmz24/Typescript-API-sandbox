@@ -127,7 +127,7 @@ export function BulkOperation(
 	operation: string,
 	parameters: BulkParams[]
 ): BulkResults {
-	if (Operation[operation] === undefined) {
+	if (!(operation == "delete" || operation == "update")) {
 		throw new Error(`${operation} is not a valid Bulk operation.`);
 	}
 	if (parameters === undefined) {
@@ -135,20 +135,10 @@ export function BulkOperation(
 			`${operation} Bulk operation cannot be performed. Please provide valid parameters.`
 		);
 	}
-	return Operation[operation](parameters);
+	return bulkProcess(parameters, operation);
 }
 
-const Operation: { [key: string]: any } = {
-	delete: (parameters: BulkParams[]) => {
-		return DeleteUsersBulk(parameters);
-	},
-	update: (parameters: BulkParams[]) => {
-		return UpdateUsersBulk(parameters);
-	},
-};
-
-// TODO: Think about refactoring function by abstracting logic into other functions.
-function UpdateUsersBulk(parameters: BulkParams[]): BulkResults {
+function bulkProcess(bulkParams: BulkParams[], operation: string): BulkResults {
 	const res: BulkResults = {
 		success: [],
 		failed: [],
@@ -161,70 +151,50 @@ function UpdateUsersBulk(parameters: BulkParams[]): BulkResults {
 		bulkItem: { searchQuery: { params: "", query: "" }, operationQueries: [] },
 		message: "",
 	};
-	parameters.forEach((item: BulkParams) => {
+	bulkParams.forEach((item: BulkParams) => {
 		const users: User[] = FindUser(item.searchQuery);
 		if (users.length > 0) {
 			res.successfulQueries.push(item);
-			users.forEach((value: User) => {
+			users.forEach((user: User) => {
 				const userIndex: number = Users.findIndex(
-					(object: User) => object.id == value.id
+					(object: User) => object.id == user.id
 				);
 				if (userIndex != 1) {
-					item.operationQueries.forEach((query: Query) => {
-						if (value[query.params] === undefined) {
-							res.failed.push(value);
-							processError.bulkItem = item;
-							processError.message = `User with ${
-								item.searchQuery.params == "birthDate"
-									? "date of birth"
-									: `${item.searchQuery.params.replace(/[N]/, " n")}`
-							} ${item.searchQuery.query} does not have a ${
-								query.params
-							}. Please provide valid parameters.`;
-							res.errors.push(processError);
-						} else {
-							value[query.params] = query.query;
-							res.success.push(value);
+					// delete or update unique operation
+					switch (operation) {
+						case "delete": {
+							Users.splice(userIndex, 1);
+							res.success.push(user);
+							break;
 						}
-					});
+						case "update": {
+							item.operationQueries.forEach((query: Query) => {
+								if (user[query.params] === undefined) {
+									res.failed.push(user);
+									processError.bulkItem = item;
+									processError.message = `User with ${
+										item.searchQuery.params == "birthDate"
+											? "date of birth"
+											: `${item.searchQuery.params.replace(/[N]/, " n")}`
+									} ${item.searchQuery.query} does not have a ${
+										query.params
+									}. Please provide valid parameters.`;
+									res.errors.push(processError);
+								} else {
+									user[query.params] = query.query;
+									res.success.push(user);
+								}
+							});
+							break;
+						}
+					}
 				}
 			});
 		} else {
 			res.failedQueries.push(item);
 		}
 	});
-	res.message = formatBulkOperationMessage(res, "update");
-	return res;
-}
-
-// TODO: Think about refactoring function by abstracting logic into other functions.
-function DeleteUsersBulk(parameters: BulkParams[]): BulkResults {
-	const res: BulkResults = {
-		success: [],
-		failed: [],
-		successfulQueries: [],
-		failedQueries: [],
-		errors: [],
-		message: "",
-	};
-	parameters.forEach((item: BulkParams) => {
-		const users: User[] = FindUser(item.searchQuery);
-		if (users.length > 0) {
-			res.successfulQueries.push(item);
-			users.forEach((value: User) => {
-				const userIndex: number = Users.findIndex(
-					(object: User) => object.id == value.id
-				);
-				if (userIndex != 1) {
-					Users.splice(userIndex, 1);
-					res.success.push(value);
-				}
-			});
-		} else {
-			res.failedQueries.push(item);
-		}
-	});
-	res.message = formatBulkOperationMessage(res, "delete");
+	res.message = formatBulkOperationMessage(res, operation);
 	return res;
 }
 
