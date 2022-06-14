@@ -87,24 +87,25 @@ const Param: { [key: string]: any } = {
 
 // TODO: Consider implementing transactions or individual tasks. Current behavior does valid tasks but returns error if one failed.
 export function UpdateUser(oldUsers: User[], newUsers: User[]): User[] {
-	const foundUsers: User[] = [];
-
-	oldUsers.forEach((element: User) => {
-		validateUserStringFormat(element, "updated");
-		if (Users.includes(element)) {
-			foundUsers.push(element);
+	const foundUsers = oldUsers.map((user: User) => {
+		if (validateUserStringFormat(user, "updated")) {
+			if (Users.includes(user)) {
+				return user;
+			}
 		}
 	});
 	if (foundUsers.length < 1 || newUsers.length < 1) {
 		return [];
 	}
-	oldUsers.forEach((value: User, index: number) => {
-		validateUserStringFormat(newUsers[index], "updated");
-		value.firstName = newUsers[index].firstName;
-		value.lastName = newUsers[index].lastName;
-		value.birthDate = newUsers[index].birthDate;
+	return oldUsers.map((user: User, index: number) => {
+		if (validateUserStringFormat(newUsers[index], "updated")) {
+			user.id = oldUsers[index].id;
+			user.firstName = newUsers[index].firstName;
+			user.lastName = newUsers[index].lastName;
+			user.birthDate = newUsers[index].birthDate;
+		}
+		return user;
 	});
-	return oldUsers;
 }
 
 export function DeleteUser(users: User[]): User[] {
@@ -139,6 +140,15 @@ export function BulkOperation(
 }
 
 function bulkProcess(bulkParams: BulkParams[], operation: string): BulkResults {
+	const res: BulkResults = bulkResultsProcess(bulkParams, operation);
+	res.message = formatBulkOperationMessage(res, operation);
+	return res;
+}
+
+function bulkResultsProcess(
+	bulkItem: BulkParams[],
+	operation: string
+): BulkResults {
 	const res: BulkResults = {
 		success: [],
 		failed: [],
@@ -147,11 +157,7 @@ function bulkProcess(bulkParams: BulkParams[], operation: string): BulkResults {
 		errors: [],
 		message: "",
 	};
-	let processError: ProcessedError = {
-		bulkItem: { searchQuery: { params: "", query: "" }, operationQueries: [] },
-		message: "",
-	};
-	bulkParams.forEach((item: BulkParams) => {
+	bulkItem.forEach((item: BulkParams) => {
 		const users: User[] = FindUser(item.searchQuery);
 		if (users.length > 0) {
 			res.successfulQueries.push(item);
@@ -160,42 +166,70 @@ function bulkProcess(bulkParams: BulkParams[], operation: string): BulkResults {
 					(object: User) => object.id == user.id
 				);
 				if (userIndex != 1) {
-					// delete or update unique operation
-					switch (operation) {
-						case "delete": {
-							Users.splice(userIndex, 1);
-							res.success.push(user);
-							break;
-						}
-						case "update": {
-							item.operationQueries.forEach((query: Query) => {
-								if (user[query.params] === undefined) {
-									res.failed.push(user);
-									processError.bulkItem = item;
-									processError.message = `User with ${
-										item.searchQuery.params == "birthDate"
-											? "date of birth"
-											: `${item.searchQuery.params.replace(/[N]/, " n")}`
-									} ${item.searchQuery.query} does not have a ${
-										query.params
-									}. Please provide valid parameters.`;
-									res.errors.push(processError);
-								} else {
-									user[query.params] = query.query;
-									res.success.push(user);
-								}
-							});
-							break;
-						}
-					}
+					const operationResult: EncapsuledBulk = Operation[operation](
+						item,
+						user,
+						userIndex
+					);
+					res.success = res.success.concat(operationResult.success);
+					res.failed = res.failed.concat(operationResult.failed);
+					res.errors = res.errors.concat(operationResult.errors);
 				}
 			});
 		} else {
 			res.failedQueries.push(item);
 		}
 	});
-	res.message = formatBulkOperationMessage(res, operation);
 	return res;
+}
+
+const Operation: { [key: string]: any } = {
+	delete: (bulkItem: BulkParams, user: User, index: number) => {
+		Users.splice(index, 1);
+		return {
+			success: [user],
+			failed: [],
+			errors: [],
+		};
+	},
+	update: (bulkItem: BulkParams, user: User, index: number) => {
+		const res: EncapsuledBulk = {
+			success: [],
+			failed: [],
+			errors: [],
+		};
+		const processError: ProcessedError = {
+			bulkItem: {
+				searchQuery: { params: "", query: "" },
+				operationQueries: [],
+			},
+			message: "",
+		};
+		bulkItem.operationQueries.forEach((query: Query) => {
+			if (user[query.params] === undefined) {
+				res.failed.push(user);
+				processError.bulkItem = bulkItem;
+				processError.message = updateProcessErrorMessage(bulkItem, query);
+				res.errors.push(processError);
+			} else {
+				user[query.params] = query.query;
+				res.success.push(user);
+			}
+		});
+		return res;
+	},
+};
+
+interface EncapsuledBulk {
+	success: User[];
+	failed: User[];
+	errors: ProcessedError[];
+}
+
+function updateProcessErrorMessage(item: BulkParams, query: Query): string {
+	return `User with ${formatQueryParamsComplete(
+		item.searchQuery
+	)} does not have a ${query.params}. Please provide valid parameters.`;
 }
 
 function formatBulkOperationMessage(
