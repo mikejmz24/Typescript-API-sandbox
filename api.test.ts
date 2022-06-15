@@ -306,7 +306,7 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 	it("Should return an empty array if the old User data provided does not exist in the Users array", () => {
 		oldData = [
 			{
-				id: 2,
+				id: 1,
 				firstName: "Pappy",
 				lastName: "Van Winkle",
 				birthDate: DT_TrainOfThought,
@@ -318,7 +318,7 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 		oldData.push(CreateUser("Captain", "Morgan", SX_Odyssey));
 		newData = [
 			{
-				id: 3,
+				id: 1,
 				firstName: "Le Capitaine$#",
 				lastName: "Morgan",
 				birthDate: Epica_ThePhantomAgony,
@@ -334,7 +334,7 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 		oldData.push(CreateUser("Captain", "Morgan", SX_Odyssey));
 		newData = [
 			{
-				id: 3,
+				id: 1,
 				firstName: "Le Capitaine",
 				lastName: "M. Morgan!",
 				birthDate: Epica_ThePhantomAgony,
@@ -350,7 +350,7 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 		oldData.push(CreateUser("Captain", "Morgan", SX_Odyssey));
 		newData = [
 			{
-				id: 3,
+				id: 1,
 				firstName: "Le Capitaine",
 				lastName: "Morgan",
 				birthDate: new Date("foo"),
@@ -412,6 +412,49 @@ describe("UpdateUser modifies Users' data and returns their updated User data", 
 			},
 		];
 		expect(UpdateUser(FindUser(query), newData)).toEqual(newData);
+	});
+	it("Should update and return 5 Users' information out of a total of 500 existing Users when searched by their IDs", () => {
+		const COB_Hatebreeder = new Date("1999-4-26");
+		for (let i: number = 0; i < 100; i++) {
+			oldData.push(CreateUser("John", "Doe", DT_TrainOfThought));
+			oldData.push(CreateUser("Jim", "Bean", Epica_ThePhantomAgony));
+			oldData.push(CreateUser("Johnnie", "Walker", SX_Odyssey));
+			oldData.push(CreateUser("Elijah", "Craig", DM_WorldMisanthropy));
+			oldData.push(CreateUser("Jack", "Daniels", Kamelot_Epica));
+		}
+		newData = [
+			{
+				id: 69,
+				firstName: "Don Julio",
+				lastName: "Blanco",
+				birthDate: COB_Hatebreeder,
+			},
+			{
+				id: 130,
+				firstName: "Ron Bacardi",
+				lastName: "Limon",
+				birthDate: COB_Hatebreeder,
+			},
+			{
+				id: 223,
+				firstName: "Tonayan",
+				lastName: "Reposado",
+				birthDate: COB_Hatebreeder,
+			},
+			{
+				id: 312,
+				firstName: "LA Cetto",
+				lastName: "Cabernet Sauvignon",
+				birthDate: COB_Hatebreeder,
+			},
+			{
+				id: 487,
+				firstName: "Jose Cuervo",
+				lastName: "Tradicional Anejo",
+				birthDate: COB_Hatebreeder,
+			},
+		];
+		expect(UpdateUser(oldData, newData)).toEqual(newData);
 	});
 });
 
@@ -545,6 +588,48 @@ describe("DeleteUser removes Users from the Users array and returns the deleted 
 		DeleteUser(FindUser(query));
 		expect(ViewUsers()).toEqual(testUsers);
 	});
+	it("Should delete 5 Users when searching by their IDs out of a total 100 existing Users", () => {
+		for (let i: number = 0; i < 100; i++) {
+			CreateUser("John", "Doe", DT_TrainOfThought);
+			CreateUser("Jim", "Bean", Epica_ThePhantomAgony);
+			CreateUser("Johnnie", "Walker", SX_Odyssey);
+			CreateUser("Elijah", "Craig", DM_WorldMisanthropy);
+			CreateUser("Jack", "Daniels", Kamelot_Epica);
+		}
+		testUsers = [
+			{
+				id: 69,
+				firstName: "John",
+				lastName: "Doe",
+				birthDate: DT_TrainOfThought,
+			},
+			{
+				id: 130,
+				firstName: "Jim",
+				lastName: "Bean",
+				birthDate: Epica_ThePhantomAgony,
+			},
+			{
+				id: 223,
+				firstName: "Johnnie",
+				lastName: "Walker",
+				birthDate: SX_Odyssey,
+			},
+			{
+				id: 312,
+				firstName: "Elijah",
+				lastName: "Craig",
+				birthDate: DM_WorldMisanthropy,
+			},
+			{
+				id: 487,
+				firstName: "Jack",
+				lastName: "Daniels",
+				birthDate: Kamelot_Epica,
+			},
+		];
+		expect(DeleteUser(testUsers)).toEqual(testUsers);
+	});
 });
 
 describe("DeleteUsersBulk deletes a group of Users from the Users array and returns a message with the number of success and failed operations including the Users' data", () => {
@@ -575,15 +660,13 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 		};
 	});
 	it("Should return not a valid Bulk operation error message when entered Bulk action remove with undefined parameters", () => {
-		parameters = undefined;
 		expect(() => {
-			BulkOperation("remove", parameters);
+			BulkOperation("remove", undefined);
 		}).toThrowError("remove is not a valid Bulk operation.");
 	});
 	it("Should return a Bulk operation cannot be performed. Please provide valid parameters error message when entered Bulk action delete with undefined parameters", () => {
-		parameters = undefined;
 		expect(() => {
-			BulkOperation("delete", parameters);
+			BulkOperation("delete", undefined);
 		}).toThrowError(
 			"delete Bulk operation cannot be performed. Please provide valid parameters."
 		);
@@ -832,6 +915,14 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 		CreateUser("Johnnie", "Walker Green", Epica_ThePhantomAgony);
 		CreateUser("Bacardi", "Limon", SX_Odyssey);
 
+		for (let i: number = 0; i < 100; i++) {
+			CreateUser("John", "Doe", DT_TrainOfThought);
+			CreateUser("Mike", "Jimenez", Epica_ThePhantomAgony);
+			CreateUser("Anne", "Rice", SX_Odyssey);
+			CreateUser("Patrick", "Stewart", DM_WorldMisanthropy);
+			CreateUser("Victor", "Lemonte Wooten", Kamelot_Epica);
+		}
+
 		let queryArray: Query[] = [
 			{ params: "firstName", query: "Jack" },
 			{ params: "lastName", query: "Bean" },
@@ -916,8 +1007,6 @@ describe("DeleteUsersBulk deletes a group of Users from the Users array and retu
 
 describe("UpdateUsersBulk updates a group of Users from the Users array and returns a message with the number of success and failed operations includinf the Users' data", () => {
 	let searchingQuery: Query;
-	let searchingQueries: Query[];
-	let operationalQuery: Query;
 	let operationalQueries: Query[];
 	let bulkParam: BulkParams;
 	let parameters: BulkParams[];
@@ -927,8 +1016,6 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 	beforeEach(() => {
 		ClearUsers();
 		searchingQuery = { params: "", query: "" };
-		searchingQueries = [];
-		operationalQuery = { params: "", query: "" };
 		operationalQueries = [];
 		bulkParam = {
 			searchQuery: { params: "", query: "" },
@@ -946,15 +1033,13 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 		};
 	});
 	it("Should return a not valid Bulk operation error message when entered Bulk action change with undefined parameters", () => {
-		parameters = undefined;
 		expect(() => {
-			BulkOperation("change", parameters);
+			BulkOperation("change", undefined);
 		}).toThrowError("change is not a valid Bulk operation.");
 	});
 	it("Should return a Bulk operation cannot be performed. Please provide valid parameters error message when entered bulk action update with undefined parameters", () => {
-		parameters = undefined;
 		expect(() => {
-			BulkOperation("update", parameters);
+			BulkOperation("update", undefined);
 		}).toThrowError(
 			"update Bulk operation cannot be performed. Please provide valid parameters."
 		);
@@ -996,6 +1081,59 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 		};
 		expect(BulkOperation("update", parameters)).toEqual(results);
 	});
+
+	it("Should fail to update non-existing User with full name Captain Morgan's first & last name", () => {
+		searchingQuery = { params: "fullName", query: "Captain Morgan" };
+		operationalQueries = [
+			{
+				params: "firstName",
+				query: "Kraken",
+			},
+			{ params: "lastName", query: "Black" },
+		];
+		testUsers = FindUser(searchingQuery);
+		bulkParam = {
+			searchQuery: searchingQuery,
+			operationQueries: operationalQueries,
+		};
+		parameters.push(bulkParam);
+		results = {
+			success: [],
+			failed: testUsers,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
+			message:
+				"User with full name Captain Morgan's first name could not be updated to Kraken neither could the last name be updated to Black. Make sure User exists or correct parameters are provided.",
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
+	});
+	it("Should fail to update non-existing User with date of birth November 11, 2003 first & last name", () => {
+		searchingQuery = {
+			params: "birthDate",
+			query: DT_TrainOfThought.toString(),
+		};
+		operationalQueries = [
+			{ params: "firstName", query: "Lillet" },
+			{ params: "lastName", query: "Blanc" },
+		];
+		testUsers = FindUser(searchingQuery);
+		bulkParam = {
+			searchQuery: searchingQuery,
+			operationQueries: operationalQueries,
+		};
+		parameters.push(bulkParam);
+		results = {
+			success: [],
+			failed: testUsers,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
+			message:
+				"User with date of birth November 10 2003's first name could not be updated to Lillet neither could the last name be updated to Blanc. Make sure User exists or correct parameters are provided.",
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
+	});
 	it("Should fail to update User Ron Solera's non-existing parameter nick name and return a not a valid parameter error message", () => {
 		CreateUser("Ron", "Solera", SX_Odyssey);
 		searchingQuery = { params: "firstName", query: "Ron" };
@@ -1031,14 +1169,23 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 		};
 		expect(BulkOperation("update", parameters)).toEqual(results);
 	});
-	it("Should fail to update non-existing User with full name Captain Morgan's first & last name", () => {
-		searchingQuery = { params: "fullName", query: "Captain Morgan" };
+	it("Should update User Jack Daniel's information and return the updated info", () => {
+		for (let i: number = 0; i < 100; i++) {
+			CreateUser("John", "Doe", DT_TrainOfThought);
+			CreateUser("Mike", "Jimenez", Epica_ThePhantomAgony);
+			CreateUser("Anne", "Rice", SX_Odyssey);
+			CreateUser("Patrick", "Stewart", DM_WorldMisanthropy);
+			CreateUser("Victor", "Lemonte Wooten", Kamelot_Epica);
+		}
+		CreateUser("Jack", "Daniels", Kamelot_Epica);
+
+		searchingQuery = {
+			params: "fullName",
+			query: "Jack Daniels",
+		};
 		operationalQueries = [
-			{
-				params: "firstName",
-				query: "Kraken",
-			},
-			{ params: "lastName", query: "Black" },
+			{ params: "firstName", query: "Mr. Jack" },
+			{ params: "lastName", query: "Daniels Sr." },
 		];
 		testUsers = FindUser(searchingQuery);
 		bulkParam = {
@@ -1047,36 +1194,14 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 		};
 		parameters.push(bulkParam);
 		results = {
-			success: [],
-			failed: testUsers,
-			successfulQueries: [],
-			failedQueries: parameters,
+			success: testUsers,
+			failed: [],
+			successfulQueries: parameters,
+			failedQueries: [],
 			errors: [],
 			message:
-				"User with full name Captain Morgan's first name could not be updated to Kraken neither could the last name be updated to Black. Make sure User exists or correct parameters are provided.",
-		};
-		expect(BulkOperation("update", parameters)).toEqual(results);
-	});
-	it("Should fail to update non-existing User with date of birth November 11, 2003 first & last name", () => {
-		searchingQuery =  { params: "birthDate", query: DT_TrainOfThought.toString() };
-		operationalQueries = [
-			{ params: "firstName", query: "Lillet" },
-			{ params: "lastName", query: "Blanc" },
-		];
-		testUsers = FindUser(searchingQuery);
-		bulkParam = {
-			searchQuery: searchingQuery,
-			operationQueries: operationalQueries,
-		};
-		parameters.push(bulkParam);
-		results = {
-			success: [],
-			failed: testUsers,
-			successfulQueries: [],
-			failedQueries: parameters,
-			errors: [],
-			message: 
-				"User with date of birth November 10 2003's first name could not be updated to Lillet neither could the last name be updated to Blanc. Make sure User exists or correct parameters are provided."
+				"Successfully updated 1 User.\n" +
+				"User with full name Jack Daniels's first name was updated to Mr. Jack & last name was updated to Daniels Sr..\n",
 		};
 		expect(BulkOperation("update", parameters)).toEqual(results);
 	});

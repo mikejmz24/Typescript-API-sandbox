@@ -87,46 +87,48 @@ const Param: { [key: string]: any } = {
 
 // TODO: Consider implementing transactions or individual tasks. Current behavior does valid tasks but returns error if one failed.
 export function UpdateUser(oldUsers: User[], newUsers: User[]): User[] {
-	const foundUsers = oldUsers.map((user: User) => {
-		if (validateUserStringFormat(user, "updated")) {
-			if (Users.includes(user)) {
+	return oldUsers
+		.filter((user: User) => {
+			if (validateUserStringFormat(user, "updated")) {
+				if (Users.includes(user)) {
+					return user;
+				}
+			}
+		})
+		.filter((oldUser: User) => {
+			return newUsers.some((newUser: User) => {
+				return oldUser.id == newUser.id;
+			});
+		})
+		.map((user: User, index: number) => {
+			if (validateUserStringFormat(newUsers[index], "updated")) {
+				user.id == user.id;
+				user.firstName = newUsers[index].firstName;
+				user.lastName = newUsers[index].lastName;
+				user.birthDate = newUsers[index].birthDate;
+			}
+			return user;
+		});
+}
+
+export function DeleteUser(users: User[]): User[] {
+	return users.filter((user: User) => {
+		if (validateUserStringFormat(user, "deleted")) {
+			const index: number = Users.findIndex((item) => {
+				return item.id == user.id;
+			});
+			if (index != -1) {
+				Users.splice(index, 1);
 				return user;
 			}
 		}
 	});
-	if (foundUsers.length < 1 || newUsers.length < 1) {
-		return [];
-	}
-	return oldUsers.map((user: User, index: number) => {
-		if (validateUserStringFormat(newUsers[index], "updated")) {
-			user.id = oldUsers[index].id;
-			user.firstName = newUsers[index].firstName;
-			user.lastName = newUsers[index].lastName;
-			user.birthDate = newUsers[index].birthDate;
-		}
-		return user;
-	});
-}
-
-export function DeleteUser(users: User[]): User[] {
-	const deletedUsers: User[] = [];
-	users.forEach((value: User) => {
-		validateUserStringFormat(value, "deleted");
-		const index: number = Users.findIndex((object) => {
-			return object.id == value.id;
-		});
-		if (index != 1) {
-			Users.splice(index, 1);
-			deletedUsers.push(value);
-		}
-	});
-	return deletedUsers;
 }
 
 // TODO: Think about dynamic (single and multiple) update functions by User parameters.
 export function BulkOperation(
 	operation: string,
-	parameters: BulkParams[]
+	parameters: undefined | BulkParams[]
 ): BulkResults {
 	if (!(operation == "delete" || operation == "update")) {
 		throw new Error(`${operation} is not a valid Bulk operation.`);
@@ -145,6 +147,46 @@ function bulkProcess(bulkParams: BulkParams[], operation: string): BulkResults {
 	return res;
 }
 
+// function bulkResultsProcess(
+// 	bulkItem: BulkParams[],
+// 	operation: string
+// ): BulkResults {
+// 	const res: BulkResults = {
+// 		success: [],
+// 		failed: [],
+// 		successfulQueries: [],
+// 		failedQueries: [],
+// 		errors: [],
+// 		message: "",
+// 	};
+// 	bulkItem.forEach((item: BulkParams) => {
+// 		const users: User[] = FindUser(item.searchQuery);
+// 		if (users.length > 0) {
+// 			res.successfulQueries.push(item);
+// 			users.forEach((user: User) => {
+// 				const userIndex: number = Users.findIndex(
+// 					(object: User) => object.id == user.id
+// 				);
+// 				if (userIndex != -1) {
+// 					const encapsuledParams: EncapsuledBulkParams = {
+// 						bulkItem: item,
+// 						user: user,
+// 						index: userIndex,
+// 					};
+// 					const operationResult: EncapsuledBulk =
+// 						Operation[operation](encapsuledParams);
+// 					res.success = res.success.concat(operationResult.success);
+// 					res.failed = res.failed.concat(operationResult.failed);
+// 					res.errors = res.errors.concat(operationResult.errors);
+// 				}
+// 			});
+// 		} else {
+// 			res.failedQueries.push(item);
+// 		}
+// 	});
+// 	return res;
+// }
+
 function bulkResultsProcess(
 	bulkItem: BulkParams[],
 	operation: string
@@ -157,79 +199,80 @@ function bulkResultsProcess(
 		errors: [],
 		message: "",
 	};
-	bulkItem.forEach((item: BulkParams) => {
-		const users: User[] = FindUser(item.searchQuery);
-		if (users.length > 0) {
-			res.successfulQueries.push(item);
-			users.forEach((user: User) => {
-				const userIndex: number = Users.findIndex(
-					(object: User) => object.id == user.id
-				);
-				if (userIndex != 1) {
-					const operationResult: EncapsuledBulk = Operation[operation](
-						item,
-						user,
-						userIndex
-					);
-					res.success = res.success.concat(operationResult.success);
-					res.failed = res.failed.concat(operationResult.failed);
-					res.errors = res.errors.concat(operationResult.errors);
+	bulkItem.forEach((itemParam: BulkParams) => {
+		const users: User[] = FindUser(itemParam.searchQuery);
+		if (users.length == 0) {
+			res.failedQueries.push(itemParam);
+		}
+		users.forEach((user: User) => {
+			const userIndex: number = Users.findIndex(
+				(object: User) => object.id == user.id
+			);
+			let hasError: boolean = false;
+			let errorMessage: string = "";
+			itemParam.operationQueries.forEach((query: Query, index: number) => {
+				if (user[query.params] == undefined) {
+					hasError = true;
+					errorMessage += updateProcessErrorMessage(itemParam, query, index);
 				}
 			});
-		} else {
-			res.failedQueries.push(item);
+			if (hasError) {
+				res.errors.push({
+					bulkItem: {
+						searchQuery: itemParam.searchQuery,
+						operationQueries: itemParam.operationQueries,
+					},
+					message: `${errorMessage}. Please provide valid parameters.`,
+				});
+				res.failed.push(user);
+			} else {
+				// Perform bulk action
+				if (userIndex != -1) {
+					const encapsuledParams: EncapsuledBulkParams = {
+						encasuledBulkParam: itemParam,
+						encapsuledUser: user,
+						encapsuledIndex: userIndex,
+					};
+					const operationResult = Operation[operation](encapsuledParams);
+					res.success = res.success.concat(operationResult);
+				}
+			}
+		});
+		// Out of Users ForEach
+		if (users.length != 0) {
+			res.successfulQueries.push(itemParam);
 		}
 	});
 	return res;
 }
 
 const Operation: { [key: string]: any } = {
-	delete: (bulkItem: BulkParams, user: User, index: number) => {
-		Users.splice(index, 1);
-		return {
-			success: [user],
-			failed: [],
-			errors: [],
-		};
+	delete: (item: EncapsuledBulkParams) => {
+		Users.splice(item.encapsuledIndex, 1);
+		return [item.encapsuledUser];
 	},
-	update: (bulkItem: BulkParams, user: User, index: number) => {
-		const res: EncapsuledBulk = {
-			success: [],
-			failed: [],
-			errors: [],
-		};
-		const processError: ProcessedError = {
-			bulkItem: {
-				searchQuery: { params: "", query: "" },
-				operationQueries: [],
-			},
-			message: "",
-		};
-		bulkItem.operationQueries.forEach((query: Query) => {
-			if (user[query.params] === undefined) {
-				res.failed.push(user);
-				processError.bulkItem = bulkItem;
-				processError.message = updateProcessErrorMessage(bulkItem, query);
-				res.errors.push(processError);
-			} else {
-				user[query.params] = query.query;
-				res.success.push(user);
-			}
-		});
-		return res;
+	update: (item: EncapsuledBulkParams) => {
+		return [item.encapsuledUser];
 	},
 };
 
-interface EncapsuledBulk {
-	success: User[];
-	failed: User[];
-	errors: ProcessedError[];
+interface EncapsuledBulkParams {
+	encasuledBulkParam: BulkParams;
+	encapsuledUser: User;
+	encapsuledIndex: number;
 }
 
-function updateProcessErrorMessage(item: BulkParams, query: Query): string {
+function updateProcessErrorMessage(
+	item: BulkParams,
+	query: Query,
+	index: number
+): string {
+	if (index != 0) {
+		return `, ${query.params}`;
+	}
 	return `User with ${formatQueryParamsComplete(
 		item.searchQuery
-	)} does not have a ${query.params}. Please provide valid parameters.`;
+	)} does not have a ${query.params}`;
 }
 
 function formatBulkOperationMessage(
@@ -243,11 +286,13 @@ function formatBulkOperationMessage(
 	const errors: ProcessedError[] = bulkResult.errors;
 	const successHeading: string = formatSuccessHeading(successCases, operation);
 	const successPredicate: string = formatSuccessPredicate(
+		bulkResult.successfulQueries,
 		successUsers,
 		operation
 	);
 	const failedHeading: string = formatFailedHeading(failedCases, operation);
 	const failedPredicate: string = formatFailedPredicate(
+		successCases,
 		failQueries,
 		operation,
 		errors
@@ -283,13 +328,50 @@ function formatSuccessHeading(successCases: number, operation: string): string {
 	return `Successfully ${operation}d ${successCases} ${Pronoun}.\n`;
 }
 
-function formatSuccessPredicate(users: User[], operation: string): string {
-	const numberUsers: number = users.length;
-	const q: Quantum = messageQuantum(numberUsers);
-	let userList: string = "";
-	if (numberUsers == 0) {
+function formatSuccessPredicate(
+	queries: BulkParams[],
+	users: User[],
+	operation: string
+): string {
+	if (users.length == 0) {
 		return "";
 	}
+	if (queries[0].operationQueries.length > 0) {
+		return operationalQueriesSuccessPredicate(queries, operation);
+	}
+	return nullOperationalQueriesSuccessPredicate(users, operation);
+}
+
+function operationalQueriesSuccessPredicate(
+	queries: BulkParams[],
+	operation: string
+): string {
+	const q: Quantum = messageQuantum(queries.length);
+	let userList: string = "";
+	queries.forEach((bulkItem) => {
+		bulkItem.operationQueries.forEach((query: Query, index: number) => {
+			if (index == 0) {
+				userList = `${formatQueryParamsComplete(
+					bulkItem.searchQuery
+				)}'s ${formatQueryParamShort(query)} was ${operation}d to ${
+					query.query
+				}`;
+			} else {
+				userList += ` & ${formatQueryParamShort(query)} was ${operation}d to ${
+					query.query
+				}`;
+			}
+		});
+	});
+	return `${q.pronoun} with ${userList}.\n`;
+}
+
+function nullOperationalQueriesSuccessPredicate(
+	users: User[],
+	operation: string
+): string {
+	const q: Quantum = messageQuantum(users.length);
+	let userList: string = "";
 	users.forEach(
 		(user: User) => (userList += `${user.firstName} ${user.lastName} & `)
 	);
@@ -308,10 +390,14 @@ function formatFailedHeading(failedCases: number, operation: string): string {
 }
 
 function formatFailedPredicate(
+	successCases: number,
 	bulkItems: BulkParams[],
 	operation: string,
 	errors: ProcessedError[]
 ): string {
+	if (bulkItems.length == 0 && errors.length == 0 && successCases > 0) {
+		return "";
+	}
 	if (bulkItems.length == 0 && errors.length == 0) {
 		return noFailItemsPredicate(bulkItems, operation);
 	}
