@@ -61,7 +61,9 @@ export function FindUser(query: Query): User[] {
 
 const Param: { [key: string]: any } = {
 	id: (id: string) => {
-		return [Users.find((user: User) => user.id.toString() == id)];
+		return Users.filter((user: User) => {
+			return user.id == +id;
+		});
 	},
 	firstName: (firstName: string) => {
 		return Users.filter((user: User) => {
@@ -147,46 +149,6 @@ function bulkProcess(bulkParams: BulkParams[], operation: string): BulkResults {
 	return res;
 }
 
-// function bulkResultsProcess(
-// 	bulkItem: BulkParams[],
-// 	operation: string
-// ): BulkResults {
-// 	const res: BulkResults = {
-// 		success: [],
-// 		failed: [],
-// 		successfulQueries: [],
-// 		failedQueries: [],
-// 		errors: [],
-// 		message: "",
-// 	};
-// 	bulkItem.forEach((item: BulkParams) => {
-// 		const users: User[] = FindUser(item.searchQuery);
-// 		if (users.length > 0) {
-// 			res.successfulQueries.push(item);
-// 			users.forEach((user: User) => {
-// 				const userIndex: number = Users.findIndex(
-// 					(object: User) => object.id == user.id
-// 				);
-// 				if (userIndex != -1) {
-// 					const encapsuledParams: EncapsuledBulkParams = {
-// 						bulkItem: item,
-// 						user: user,
-// 						index: userIndex,
-// 					};
-// 					const operationResult: EncapsuledBulk =
-// 						Operation[operation](encapsuledParams);
-// 					res.success = res.success.concat(operationResult.success);
-// 					res.failed = res.failed.concat(operationResult.failed);
-// 					res.errors = res.errors.concat(operationResult.errors);
-// 				}
-// 			});
-// 		} else {
-// 			res.failedQueries.push(item);
-// 		}
-// 	});
-// 	return res;
-// }
-
 function bulkResultsProcess(
 	bulkItem: BulkParams[],
 	operation: string
@@ -252,6 +214,7 @@ const Operation: { [key: string]: any } = {
 		return [item.encapsuledUser];
 	},
 	update: (item: EncapsuledBulkParams) => {
+		// TODO: Perform actual update function on Users array
 		return [item.encapsuledUser];
 	},
 };
@@ -351,7 +314,7 @@ function operationalQueriesSuccessPredicate(
 	queries.forEach((bulkItem) => {
 		bulkItem.operationQueries.forEach((query: Query, index: number) => {
 			if (index == 0) {
-				userList = `${formatQueryParamsComplete(
+				userList += `${formatQueryParamsComplete(
 					bulkItem.searchQuery
 				)}'s ${formatQueryParamShort(query)} was ${operation}d to ${
 					query.query
@@ -362,7 +325,11 @@ function operationalQueriesSuccessPredicate(
 				}`;
 			}
 		});
+		if (operation == "update") {
+			userList += ` & ${q.pronoun} with `;
+		}
 	});
+	userList = userList.substring(0, userList.length - (9 + q.pronoun.length));
 	return `${q.pronoun} with ${userList}.\n`;
 }
 
@@ -433,8 +400,19 @@ function failedQueriesPredicate(
 	const q: Quantum = messageQuantum(bulkItems.length);
 	const hint: string = `Make sure ${q.pronoun} ${q.exists} or correct parameters are provided.`;
 	let formattedSearchQuery: string = "";
-	bulkItems.forEach((bulkItem: BulkParams) => {
-		formattedSearchQuery += formatSearchQuery(bulkItem, operation);
+	bulkItems.forEach((bulkItem: BulkParams, index: number) => {
+		if (operation == "delete") {
+			formattedSearchQuery += formatSearchQuery(bulkItem, operation);
+		} else {
+			if (index != 0) {
+				formattedSearchQuery += ` & ${q.pronoun} with ${formatSearchQuery(
+					bulkItem,
+					operation
+				)}`;
+			} else {
+				formattedSearchQuery += formatSearchQuery(bulkItem, operation);
+			}
+		}
 	});
 	if (trimSearchQuery(formattedSearchQuery)) {
 		formattedSearchQuery = trimAmp(formattedSearchQuery);
@@ -462,7 +440,6 @@ function formatProcessedError(
 		const formattedParams: string = formatQueryParamShort(item);
 		operationQuery += `${formattedParams} could not be ${operation}d to ${item.query}`;
 	});
-	// full name Captain Morgan's first name could not be updated to Kraken neither could the last name be updated to Black
 	return `${search}'s ${operationQuery}`;
 }
 
@@ -507,6 +484,10 @@ function formatOperationQuery(
 	additional: boolean
 ): string {
 	let formattedQuery: string = formatQueryParamShort(query);
+	const DoB: Date = new Date(query.query);
+	if (validateDate(DoB)) {
+		query.query = formatDate(DoB);
+	}
 	if (!additional) {
 		return `'s ${formattedQuery} could not be ${operation}d to ${query.query}`;
 	}

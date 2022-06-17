@@ -1134,6 +1134,103 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 		};
 		expect(BulkOperation("update", parameters)).toEqual(results);
 	});
+	it("Should fail to update non-existing User with first name Johnnie, first, last name & date of birth", () => {
+		searchingQuery = {
+			params: "firstName",
+			query: "Johnnie",
+		};
+		operationalQueries = [
+			{ params: "firstName", query: "Chivas" },
+			{ params: "lastName", query: "Regal" },
+			{ params: "birthDate", query: new Date("2000-10-1").toString() },
+		];
+		testUsers = FindUser(searchingQuery);
+		bulkParam = {
+			searchQuery: searchingQuery,
+			operationQueries: operationalQueries,
+		};
+		parameters.push(bulkParam);
+		results = {
+			success: [],
+			failed: testUsers,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
+			message:
+				"User with first name Johnnie's first name could not be updated to Chivas neither could the last name be updated to Regal neither could the date of birth be updated to October 1 2000. Make sure User exists or correct parameters are provided.",
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
+	});
+	it("Should fail to update non-existing User with full name Woodford's Reserve, first, last name, date of birth plus an invalid parameter of nick name", () => {
+		searchingQuery = {
+			params: "fullName",
+			query: "Woodford's Reserve",
+		};
+		operationalQueries = [
+			{ params: "firstName", query: "Wild" },
+			{ params: "lastName", query: "Turkey" },
+			{ params: "birthDate", query: new Date("2000-10-1").toString() },
+			{ params: "nickName", query: "Time-Honored Icon" },
+		];
+		testUsers = FindUser(searchingQuery);
+		bulkParam = {
+			searchQuery: searchingQuery,
+			operationQueries: operationalQueries,
+		};
+		parameters.push(bulkParam);
+		results = {
+			success: [],
+			failed: testUsers,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
+			message:
+				"User with full name Woodford's Reserve's first name could not be updated to Wild neither could the last name be updated to Turkey neither could the date of birth be updated to October 1 2000 neither could the nick name be updated to Time-Honored Icon. Make sure User exists or correct parameters are provided.",
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
+	});
+	it("Should fail to update 2 non-existing users with last name Bean's first name to James", () => {
+		searchingQuery = {
+			params: "lastName",
+			query: "Bean",
+		};
+		operationalQueries = [
+			{ params: "firstName", query: "James" },
+			{ params: "lastName", query: "Rye Dog" },
+			{ params: "birthDate", query: new Date("1995-2-13").toString() },
+		];
+		testUsers = testUsers.concat(FindUser(searchingQuery));
+		bulkParam = {
+			searchQuery: searchingQuery,
+			operationQueries: operationalQueries,
+		};
+		parameters.push(bulkParam);
+		searchingQuery = {
+			params: "lastName",
+			query: "Bean",
+		};
+		operationalQueries = [
+			{ params: "firstName", query: "James" },
+			{ params: "lastName", query: "Nain Rouge Absinthe Verte" },
+			{ params: "birthDate", query: new Date("1999-7-1").toString() },
+		];
+		testUsers = testUsers.concat(FindUser(searchingQuery));
+		bulkParam = {
+			searchQuery: searchingQuery,
+			operationQueries: operationalQueries,
+		};
+		parameters.push(bulkParam);
+		results = {
+			success: [],
+			failed: testUsers,
+			successfulQueries: [],
+			failedQueries: parameters,
+			errors: [],
+			message:
+				"Users with last name Bean's first name could not be updated to James neither could the last name be updated to Rye Dog neither could the date of birth be updated to February 13 1995 & Users with last name Bean's first name could not be updated to James neither could the last name be updated to Nain Rouge Absinthe Verte neither could the date of birth be updated to July 1 1999. Make sure Users exist or correct parameters are provided.",
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
+	});
 	it("Should fail to update User Ron Solera's non-existing parameter nick name and return a not a valid parameter error message", () => {
 		CreateUser("Ron", "Solera", SX_Odyssey);
 		searchingQuery = { params: "firstName", query: "Ron" };
@@ -1202,6 +1299,122 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 			message:
 				"Successfully updated 1 User.\n" +
 				"User with full name Jack Daniels's first name was updated to Mr. Jack & last name was updated to Daniels Sr..\n",
+		};
+		expect(BulkOperation("update", parameters)).toEqual(results);
+	});
+	it("Should update 3 Users and fail to update 1 non-existing Users", () => {
+		for (let i: number = 0; i < 100; i++) {
+			CreateUser("Nicole", "Addams", DT_TrainOfThought);
+			CreateUser("Kim", "Thompson", Epica_ThePhantomAgony);
+			CreateUser("Anne", "Rice", SX_Odyssey);
+			CreateUser("Patrick", "Stewart", DM_WorldMisanthropy);
+			CreateUser("Victor", "Lemonte Wooten", Kamelot_Epica);
+		}
+		CreateUser("Mike", "Lewis", DT_TrainOfThought);
+		CreateUser("Mary", "Jane", DT_TrainOfThought);
+		CreateUser("Vince", "McLain", DT_TrainOfThought);
+
+		interface updateQuery {
+			searchP: string;
+			searchQ: string;
+			operationP1: string;
+			operationQ1: string;
+			operationP2: string;
+			operationQ2: string;
+		}
+		const validUsers: updateQuery[] = [
+			{
+				searchP: "firstName",
+				searchQ: "Mike",
+				operationP1: "firstName",
+				operationQ1: "Michael",
+				operationP2: "lastName",
+				operationQ2: "Schumacher",
+			},
+			{
+				searchP: "fullName",
+				searchQ: "Mary Jane",
+				operationP1: "firstName",
+				operationQ1: "Marie",
+				operationP2: "lastName",
+				operationQ2: "Doe",
+			},
+			{
+				searchP: "lastName",
+				searchQ: "McLain",
+				operationP1: "firstName",
+				operationQ1: "Johnny",
+				operationP2: "lastName",
+				operationQ2: "Rambo",
+			},
+			// Failing users
+			{
+				searchP: "firstName",
+				searchQ: "Dominique",
+				operationP1: "firstName",
+				operationQ1: "Dom",
+				operationP2: "lastName",
+				operationQ2: "Benson",
+			},
+		];
+
+		validUsers.forEach((item: updateQuery) => {
+			searchingQuery = {
+				params: item.searchP,
+				query: item.searchQ,
+			};
+			operationalQueries = [
+				{ params: item.operationP1, query: item.operationQ1 },
+				{ params: item.operationP2, query: item.operationQ2 },
+			];
+			testUsers = testUsers.concat(FindUser(searchingQuery));
+			bulkParam = {
+				searchQuery: searchingQuery,
+				operationQueries: operationalQueries,
+			};
+			parameters.push(bulkParam);
+		});
+
+		results = {
+			success: testUsers,
+			failed: [],
+			successfulQueries: [
+				{
+					searchQuery: { params: "firstName", query: "Mike" },
+					operationQueries: [
+						{ params: "firstName", query: "Michael" },
+						{ params: "lastName", query: "Schumacher" },
+					],
+				},
+				{
+					searchQuery: { params: "fullName", query: "Mary Jane" },
+					operationQueries: [
+						{ params: "firstName", query: "Marie" },
+						{ params: "lastName", query: "Doe" },
+					],
+				},
+				{
+					searchQuery: { params: "lastName", query: "McLain" },
+					operationQueries: [
+						{ params: "firstName", query: "Johnny" },
+						{ params: "lastName", query: "Rambo" },
+					],
+				},
+			],
+			failedQueries: [
+				{
+					searchQuery: { params: "firstName", query: "Dominique" },
+					operationQueries: [
+						{ params: "firstName", query: "Dom" },
+						{ params: "lastName", query: "Benson" },
+					],
+				},
+			],
+			errors: [],
+			message:
+				"Successfully updated 3 Users.\n" +
+				"Users with first name Mike's first name was updated to Michael & last name was updated to Schumacher & Users with full name Mary Jane's first name was updated to Marie & last name was updated to Doe & Users with last name McLain's first name was updated to Johnny & last name was updated to Rambo.\n" +
+				"User with first name Dominique's first name could not be updated to Dom neither could the last name be updated to Benson. Make sure User exists or correct parameters are provided.",
 		};
 		expect(BulkOperation("update", parameters)).toEqual(results);
 	});
