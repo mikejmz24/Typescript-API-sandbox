@@ -1302,7 +1302,7 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 		};
 		expect(BulkOperation("update", parameters)).toEqual(results);
 	});
-	it("Should update 3 Users and fail to update 1 non-existing Users", () => {
+	it("Should update 3 Users and fail to update 2 non-existing Users", () => {
 		for (let i: number = 0; i < 100; i++) {
 			CreateUser("Nicole", "Addams", DT_TrainOfThought);
 			CreateUser("Kim", "Thompson", Epica_ThePhantomAgony);
@@ -1355,6 +1355,14 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 				operationQ1: "Dom",
 				operationP2: "lastName",
 				operationQ2: "Benson",
+			},
+			{
+				searchP: "fullName",
+				searchQ: "Razor Ramon",
+				operationP1: "firstName",
+				operationQ1: "Scott",
+				operationP2: "lastName",
+				operationQ2: "Hall",
 			},
 		];
 
@@ -1409,12 +1417,19 @@ describe("UpdateUsersBulk updates a group of Users from the Users array and retu
 						{ params: "lastName", query: "Benson" },
 					],
 				},
+				{
+					searchQuery: { params: "fullName", query: "Razor Ramon" },
+					operationQueries: [
+						{ params: "firstName", query: "Scott" },
+						{ params: "lastName", query: "Hall" },
+					],
+				},
 			],
 			errors: [],
 			message:
 				"Successfully updated 3 Users.\n" +
 				"Users with first name Mike's first name was updated to Michael & last name was updated to Schumacher & Users with full name Mary Jane's first name was updated to Marie & last name was updated to Doe & Users with last name McLain's first name was updated to Johnny & last name was updated to Rambo.\n" +
-				"User with first name Dominique's first name could not be updated to Dom neither could the last name be updated to Benson. Make sure User exists or correct parameters are provided.",
+				"Users with first name Dominique's first name could not be updated to Dom neither could the last name be updated to Benson & Users with full name Razor Ramon's first name could not be updated to Scott neither could the last name be updated to Hall. Make sure Users exist or correct parameters are provided.",
 		};
 		expect(BulkOperation("update", parameters)).toEqual(results);
 	});

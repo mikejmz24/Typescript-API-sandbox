@@ -98,7 +98,7 @@ export function UpdateUser(oldUsers: User[], newUsers: User[]): User[] {
 			}
 		})
 		.filter((oldUser: User) => {
-			return newUsers.some((newUser: User) => {
+			return newUsers.find((newUser: User) => {
 				return oldUser.id == newUser.id;
 			});
 		})
