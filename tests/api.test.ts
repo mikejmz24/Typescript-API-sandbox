@@ -10,7 +10,7 @@ import {
 	BulkOperation,
 	Query,
 	BulkParams,
-} from "./api";
+} from "../src/api";
 
 const DT_TrainOfThought: Date = new Date("2003-11-11");
 const Kamelot_Epica: Date = new Date("2003-1-13");

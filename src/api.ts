@@ -263,10 +263,11 @@ function formatBulkOperationMessage(
 	return successHeading + successPredicate + failedHeading + failedPredicate;
 }
 
-interface Quantum {
+export interface Quantum {
 	pronoun: string;
 	verb: string;
 	exists: string;
+	field: string;
 }
 
 function messageQuantum(num: number): Quantum {
@@ -274,11 +275,13 @@ function messageQuantum(num: number): Quantum {
 		pronoun: "User",
 		verb: "was",
 		exists: "exists",
+		field: "field",
 	};
 	if (num != 1) {
 		res.pronoun = "Users";
 		res.verb = "were";
 		res.exists = "exist";
+		res.field = "fields";
 	}
 	return res;
 }
@@ -443,7 +446,7 @@ function formatProcessedError(
 	return `${search}'s ${operationQuery}`;
 }
 
-function formatQueryParamShort(query: Query): string {
+export function formatQueryParamShort(query: Query): string {
 	const DoB = new Date(query.query.toString());
 	if (query.params == "birthDate") {
 		if (validateDate(DoB)) {
@@ -494,7 +497,7 @@ function formatOperationQuery(
 	return ` neither could the ${formattedQuery} be ${operation}d to ${query.query}`;
 }
 
-function formatQueryParamsComplete(query: Query): string {
+export function formatQueryParamsComplete(query: Query): string {
 	const DoB = new Date(query.query.toString());
 	if (query.params == "birthDate") {
 		if (validateDate(DoB)) {
