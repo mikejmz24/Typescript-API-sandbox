@@ -268,6 +268,7 @@ export interface Quantum {
 	verb: string;
 	exists: string;
 	field: string;
+	incident: string;
 }
 
 function messageQuantum(num: number): Quantum {
@@ -276,12 +277,14 @@ function messageQuantum(num: number): Quantum {
 		verb: "was",
 		exists: "exists",
 		field: "field",
+		incident: "incident",
 	};
 	if (num != 1) {
 		res.pronoun = "Users";
 		res.verb = "were";
 		res.exists = "exist";
 		res.field = "fields";
+		res.field = "incidents";
 	}
 	return res;
 }
@@ -487,14 +490,19 @@ function formatOperationQuery(
 	additional: boolean
 ): string {
 	let formattedQuery: string = formatQueryParamShort(query);
-	const DoB: Date = new Date(query.query);
-	if (validateDate(DoB)) {
-		query.query = formatDate(DoB);
-	}
+	query.query = dateFormat(query.query);
 	if (!additional) {
 		return `'s ${formattedQuery} could not be ${operation}d to ${query.query}`;
 	}
 	return ` neither could the ${formattedQuery} be ${operation}d to ${query.query}`;
+}
+
+export function dateFormat(date: string): string {
+	const DoB: Date = new Date(date);
+	if (validateDate(DoB)) {
+		date = formatDate(DoB);
+	}
+	return date;
 }
 
 export function formatQueryParamsComplete(query: Query): string {
@@ -538,7 +546,7 @@ function validateNameString(str: string): boolean {
 	return /^[a-zA-Z\s]+$/.test(str);
 }
 
-function validateDate(date: Date): boolean {
+export function validateDate(date: Date): boolean {
 	return date.toString() != "Invalid Date";
 }
 
