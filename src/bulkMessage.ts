@@ -1,5 +1,4 @@
 import {
-	BulkResults,
 	Quantum,
 	User,
 	Query,
@@ -7,13 +6,69 @@ import {
 	formatQueryParamsComplete,
 	ProcessedError,
 	dateFormat,
-	BulkOperation,
 } from "./api";
 
 export interface BulkParamsV2 {
 	searchQuery: Query;
 	operationalQueries: Query[];
 	users: User[];
+}
+
+export interface BulkParamsV3 {
+	type: string;
+	searchQuery: Query;
+	operationalQueries: Query[];
+	users: User[];
+}
+
+export function bulkMessage(
+	results: BulkParamsV3[],
+	operation: string
+): string {
+	let res: string = "I'm error";
+	let operationQueryDetails: string = "";
+	let userList: string = "";
+	let result: BulkMessageResult[] = [];
+	const q: Quantum = getQuantum(results.length);
+	if (results.length == 0) {
+		return "";
+	}
+	results.forEach((bulkParam: BulkParamsV3) => {
+		if (bulkParam.users.length == 0) {
+		}
+		bulkParam.users.forEach((user: User) => {
+			bulkParam.operationalQueries.forEach((query: Query) => {
+				// Process Queries here...
+			});
+			if (bulkParam.operationalQueries.length == 0) {
+				switch (bulkParam.type) {
+					case "success":
+						userList += `\tID ${user.id} ${user.firstName} ${user.lastName}.\n`;
+						result.push({ type: bulkParam.type, userList: userList });
+						break;
+					default:
+						break;
+				}
+			}
+		});
+	});
+	const successCases: BulkMessageResult[] = result.filter(
+		(item: BulkMessageResult) => item.type == "success"
+	);
+	if (successCases.length > 0) {
+		res =
+			`Successfully ${operation}d ${successCases.length} ${q.pronoun}:\n` +
+			`The following ${q.pronoun} ${q.verb} ${operation}d:\n` +
+			`${successCases.reduce((acc: string, item: BulkMessageResult) => {
+				return acc + item.userList;
+			}, "")}`;
+	}
+	return res;
+}
+
+interface BulkMessageResult {
+	type: string;
+	userList: string;
 }
 
 export function successHeading(

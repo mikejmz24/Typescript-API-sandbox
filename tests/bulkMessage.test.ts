@@ -4,6 +4,8 @@ import {
 	successHeading,
 	successPredicate,
 	failedPredicate,
+	BulkParamsV3,
+	bulkMessage,
 } from "../src/bulkMessage";
 
 describe("SuccessHeading function returns how many users had successful bulk operations", () => {
@@ -467,7 +469,7 @@ describe("FailedPredicate function returns a detailed description of the Users w
 	});
 	it("Should return failed error message with 1 & 2 incidents for 2 User", () => {
 		result =
-			"The following Users could noe be updated:\n" +
+			"The following Users could not be updated:\n" +
 			"\tUser with full name Jack Daniels does not have the following field:\n" +
 			"\t\t.nickName\n" +
 			"\tUser with first name Jim does not have the following fields:\n" +
@@ -649,7 +651,7 @@ describe("Full test, SuccessHeading, SuccessPredicate, Failed Predicate", () => 
 		successCases = 0;
 		operation = "";
 	});
-	it("Should return successful deleted message for 1 User with 1 failed User", () => {
+	it("Should return successful delete message for 1 User with 1 failed User", () => {
 		result =
 			"Successfully deleted 1 User.\n" +
 			"The following User was deleted:\n" +
@@ -686,7 +688,7 @@ describe("Full test, SuccessHeading, SuccessPredicate, Failed Predicate", () => 
 				failedPredicate(failed, errors, successCases, operation)
 		).toBe(result);
 	});
-	it("Should return successful deleted message for 3 Users with 3 failed Users", () => {
+	it("Should return successful delete message for 3 Users with 3 failed Users", () => {
 		result =
 			"Successfully deleted 3 Users.\n" +
 			"The following Users were deleted:\n" +
@@ -763,5 +765,183 @@ describe("Full test, SuccessHeading, SuccessPredicate, Failed Predicate", () => 
 				successPredicate(success, operation) +
 				failedPredicate(failed, errors, successCases, operation)
 		).toBe(result);
+	});
+	it("Should return successful update message for 3 Users with 3 failed Users and 3 errors", () => {
+		result =
+			"Successfully updated 3 Users.\n" +
+			"The following Users were updated:\n" +
+			"\tUser with full name Jack Daniels had the following fields updated:\n" +
+			"\t\tfirst name was updated to Gentleman Jack.\n" +
+			"\t\tlast name was updated to Daniels Reserved.\n" +
+			"\tUser with first name Jim had the following field updated:\n" +
+			"\t\tfirst name was updated to James.\n" +
+			"\tUser with last name Regal had the following field updated:\n" +
+			"\t\tlast name was updated to Regal Sr.\n" +
+			"The following Users could not be updated:\n" +
+			"\tUser with full name William Lawson had the following incidents:\n" +
+			"\t\tfirst name could not be updated to Bill.\n" +
+			"\t\tlast name could not be updated to Lawson Jr.\n" +
+			"\tUser with first name Captain had the following incident:\n" +
+			"\t\tfirst name could not be updated to Comodore.\n" +
+			"\tUser with last name Heineken had the following incident:\n" +
+			"\t\tlast name could not be updated to Heinekensen.\n" +
+			"\tUser with full name Woodford Reserve does not have the following fields:\n" +
+			"\t\tnumber of distilleries.\n" +
+			"\t\tnumber of casks.\n" +
+			"\tUser with first name Johnny does not have the following field:\n" +
+			"\t\tnumber of movies.\n" +
+			"\tUser with date of birth June 6 2002 does not have the following field:\n" +
+			"\t\tdays played.\n";
+		success = [
+			{
+				searchQuery: {
+					params: "fullName",
+					query: "Jack Daniels",
+				},
+				operationalQueries: [
+					{ params: "firstName", query: "Gentleman Jack" },
+					{ params: "lastName", query: "Daniels Reserved" },
+				],
+				users: [
+					{
+						id: 1,
+						firstName: "Jack",
+						lastName: "Daniels",
+						birthDate: new Date("2001-5-23"),
+					},
+				],
+			},
+			{
+				searchQuery: {
+					params: "firstName",
+					query: "Jim",
+				},
+				operationalQueries: [{ params: "firstName", query: "James" }],
+				users: [
+					{
+						id: 22,
+						firstName: "James",
+						lastName: "Bean",
+						birthDate: new Date("2001-5-23"),
+					},
+				],
+			},
+			{
+				searchQuery: {
+					params: "lastName",
+					query: "Regal",
+				},
+				operationalQueries: [{ params: "lastName", query: "Regal Sr" }],
+				users: [
+					{
+						id: 223,
+						firstName: "Chivas",
+						lastName: "Regal Sr",
+						birthDate: new Date("2001-5-23"),
+					},
+				],
+			},
+		];
+		failed = [
+			{
+				searchQuery: { params: "fullName", query: "William Lawson" },
+				operationalQueries: [
+					{ params: "firstName", query: "Bill" },
+					{ params: "lastName", query: "Lawson Jr" },
+				],
+				users: [],
+			},
+			{
+				searchQuery: { params: "firstName", query: "Captain" },
+				operationalQueries: [{ params: "firstName", query: "Comodore" }],
+				users: [],
+			},
+			{
+				searchQuery: { params: "lastName", query: "Heineken" },
+				operationalQueries: [{ params: "lastName", query: "Heinekensen" }],
+				users: [],
+			},
+		];
+		errors = [
+			{
+				bulkItem: {
+					searchQuery: { params: "fullName", query: "Woodford Reserve" },
+					operationQueries: [
+						{ params: "number of distilleries", query: "3" },
+						{ params: "number of casks", query: "1000" },
+					],
+				},
+				message:
+					"User with full name Woodford Reserve does not have a number of distilleries nor a number of casks. Please provide valid parameters.",
+			},
+			{
+				bulkItem: {
+					searchQuery: { params: "firstName", query: "Johnny" },
+					operationQueries: [{ params: "number of movies", query: "233" }],
+				},
+				message:
+					"User with first name Johnny does not have a number of movies. Please provide valid parameters.",
+			},
+			{
+				bulkItem: {
+					searchQuery: {
+						params: "birthDate",
+						query: new Date("2002-6-6").toString(),
+					},
+					operationQueries: [{ params: "days played", query: "2333" }],
+				},
+				message:
+					"User with date of birth June 6 2002 does not have a days played. Please provide valid parameters.",
+			},
+		];
+		successCases = success.length;
+		operation = "update";
+		expect(
+			successHeading(successCases, operation) +
+				successPredicate(success, operation) +
+				failedPredicate(failed, errors, successCases, operation)
+		).toBe(result);
+	});
+});
+
+describe("bulkMessage returns a descriptive message of the bulk operation performed including success, fails and errors", () => {
+	let results: BulkParamsV3[] = [];
+	let operation: string = "";
+	let message: string = "";
+	const Donkey_Kong_Country: Date = new Date("1994-11-21");
+
+	beforeEach(() => {
+		results = [];
+		operation = "";
+		message = "";
+	});
+	it("Should return an empty message when no results provided", () => {
+		message = "";
+		results = [];
+		operation = "delete";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return delete success message for 1 User", () => {
+		message =
+			"Successfully deleted 1 User:\n" +
+			"The following User was deleted:\n" +
+			"\tID 12 Jack Daniels.\n";
+		results = [
+			{
+				type: "success",
+				searchQuery: { params: "fullName", query: "Jack Daniels" },
+				operationalQueries: [],
+				users: [
+					{
+						id: 12,
+						firstName: "Jack",
+						lastName: "Daniels",
+						birthDate: Donkey_Kong_Country,
+					},
+				],
+			},
+		];
+		operation = "delete";
+		expect(bulkMessage(results, operation)).toBe(message);
 	});
 });
