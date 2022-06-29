@@ -944,4 +944,459 @@ describe("bulkMessage returns a descriptive message of the bulk operation perfor
 		operation = "delete";
 		expect(bulkMessage(results, operation)).toBe(message);
 	});
+	it("Should return update success message for 1 User", () => {
+		message =
+			"Successfully updated 1 User:\n" +
+			"The following User was updated:\n" +
+			"\tUser with full name Wild Turkey had the following fields updated:\n" +
+			"\t\tUser ID 112 Wild Turkey's first name was updated to Wylde.\n" +
+			"\t\tUser ID 112 Wild Turkey's last name was updated to Turk.\n" +
+			"\t\tUser ID 112 Wild Turkey's date of birth was updated to September 19 2003.\n";
+		results = [
+			{
+				type: "success",
+				searchQuery: { params: "fullName", query: "Wild Turkey" },
+				operationalQueries: [
+					{ params: "firstName", query: "Wylde" },
+					{ params: "lastName", query: "Turk" },
+					{ params: "birthDate", query: new Date("2003-9-19").toString() },
+				],
+				users: [
+					{
+						id: 112,
+						firstName: "Wild",
+						lastName: "Turkey",
+						birthDate: Donkey_Kong_Country,
+					},
+				],
+			},
+		];
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return delete success message for 45 Users", () => {
+		message =
+			"Successfully deleted 45 Users:\n" +
+			"The following Users were deleted:\n" +
+			"\tID 1 Jack Daniels.\n" +
+			"\tID 2 Jack Daniels.\n" +
+			"\tID 3 Jack Daniels.\n" +
+			"\tID 4 Jack Daniels.\n" +
+			"\tID 5 Jack Daniels.\n" +
+			"\tID 6 Jack Daniels.\n" +
+			"\tID 7 Jack Daniels.\n" +
+			"\tID 8 Jack Daniels.\n" +
+			"\tID 9 Jack Daniels.\n" +
+			"\tID 10 Jack Daniels.\n" +
+			"\tID 11 Jack Daniels.\n" +
+			"\tID 12 Jack Daniels.\n" +
+			"\tID 13 Jack Daniels.\n" +
+			"\tID 14 Jack Daniels.\n" +
+			"\tID 15 Jack Daniels.\n" +
+			"\tID 16 Jim Bean.\n" +
+			"\tID 17 Jim Bean.\n" +
+			"\tID 18 Jim Bean.\n" +
+			"\tID 19 Jim Bean.\n" +
+			"\tID 20 Jim Bean.\n" +
+			"\tID 21 Jim Bean.\n" +
+			"\tID 22 Jim Bean.\n" +
+			"\tID 23 Jim Bean.\n" +
+			"\tID 24 Jim Bean.\n" +
+			"\tID 25 Jim Bean.\n" +
+			"\tID 26 Jim Bean.\n" +
+			"\tID 27 Jim Bean.\n" +
+			"\tID 28 Jim Bean.\n" +
+			"\tID 29 Jim Bean.\n" +
+			"\tID 30 Jim Bean.\n" +
+			"\tID 31 Johnny Walker.\n" +
+			"\tID 32 Johnny Walker.\n" +
+			"\tID 33 Johnny Walker.\n" +
+			"\tID 34 Johnny Walker.\n" +
+			"\tID 35 Johnny Walker.\n" +
+			"\tID 36 Johnny Walker.\n" +
+			"\tID 37 Johnny Walker.\n" +
+			"\tID 38 Johnny Walker.\n" +
+			"\tID 39 Johnny Walker.\n" +
+			"\tID 40 Johnny Walker.\n" +
+			"\tID 41 Johnny Walker.\n" +
+			"\tID 42 Johnny Walker.\n" +
+			"\tID 43 Johnny Walker.\n" +
+			"\tID 44 Johnny Walker.\n" +
+			"\tID 45 Johnny Walker.\n";
+
+		let userArray: User[] = [];
+
+		for (let i: number = 1; i < 16; i++) {
+			userArray.push({
+				id: i,
+				firstName: "Jack",
+				lastName: "Daniels",
+				birthDate: Donkey_Kong_Country,
+			});
+		}
+		results.push({
+			type: "success",
+			searchQuery: { params: "fullName", query: "Jack Daniels" },
+			operationalQueries: [],
+			users: userArray,
+		});
+		userArray = [];
+
+		for (let i: number = 16; i < 31; i++) {
+			userArray.push({
+				id: i,
+				firstName: "Jim",
+				lastName: "Bean",
+				birthDate: Donkey_Kong_Country,
+			});
+		}
+		results.push({
+			type: "success",
+			searchQuery: { params: "fullName", query: "Jim Bean" },
+			operationalQueries: [],
+			users: userArray,
+		});
+		userArray = [];
+
+		for (let i: number = 31; i < 46; i++) {
+			userArray.push({
+				id: i,
+				firstName: "Johnny",
+				lastName: "Walker",
+				birthDate: Donkey_Kong_Country,
+			});
+		}
+		results.push({
+			type: "success",
+			searchQuery: { params: "fullName", query: "Johnny Walker" },
+			operationalQueries: [],
+			users: userArray,
+		});
+		userArray = [];
+		operation = "delete";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return an update success message for 3 queries with 4 Users each", () => {
+		message =
+			"Successfully updated 12 Users:\n" +
+			"The following Users were updated:\n" +
+			"\tUsers with full name Jack Daniels had the following fields updated:\n" +
+			"\t\tUser ID 1 Jack Daniels's first name was updated to Gentleman Jack.\n" +
+			"\t\tUser ID 1 Jack Daniels's last name was updated to Reserved.\n" +
+			"\t\tUser ID 1 Jack Daniels's date of birth was updated to September 30 1998.\n" +
+			"\t\tUser ID 11 Jack Daniels's first name was updated to Gentleman Jack.\n" +
+			"\t\tUser ID 11 Jack Daniels's last name was updated to Reserved.\n" +
+			"\t\tUser ID 11 Jack Daniels's date of birth was updated to September 30 1998.\n" +
+			"\t\tUser ID 111 Jack Daniels's first name was updated to Gentleman Jack.\n" +
+			"\t\tUser ID 111 Jack Daniels's last name was updated to Reserved.\n" +
+			"\t\tUser ID 111 Jack Daniels's date of birth was updated to September 30 1998.\n" +
+			"\t\tUser ID 1111 Jack Daniels's first name was updated to Gentleman Jack.\n" +
+			"\t\tUser ID 1111 Jack Daniels's last name was updated to Reserved.\n" +
+			"\t\tUser ID 1111 Jack Daniels's date of birth was updated to September 30 1998.\n" +
+			"\tUsers with date of birth September 12 1977 had the following fields updated:\n" +
+			"\t\tUser ID 2 Jim Bean's first name was updated to James.\n" +
+			"\t\tUser ID 2 Jim Bean's last name was updated to McCallister.\n" +
+			"\t\tUser ID 2 Jim Bean's date of birth was updated to November 2 1989.\n" +
+			"\t\tUser ID 22 Jim Bean's first name was updated to James.\n" +
+			"\t\tUser ID 22 Jim Bean's last name was updated to McCallister.\n" +
+			"\t\tUser ID 22 Jim Bean's date of birth was updated to November 2 1989.\n" +
+			"\t\tUser ID 222 Jim Bean's first name was updated to James.\n" +
+			"\t\tUser ID 222 Jim Bean's last name was updated to McCallister.\n" +
+			"\t\tUser ID 222 Jim Bean's date of birth was updated to November 2 1989.\n" +
+			"\t\tUser ID 2222 Jim Bean's first name was updated to James.\n" +
+			"\t\tUser ID 2222 Jim Bean's last name was updated to McCallister.\n" +
+			"\t\tUser ID 2222 Jim Bean's date of birth was updated to November 2 1989.\n" +
+			"\tUsers with last name Harris had the following fields updated:\n" +
+			"\t\tUser ID 3 Steve Harris's first name was updated to Eddie.\n" +
+			"\t\tUser ID 3 Steve Harris's last name was updated to T Head.\n" +
+			"\t\tUser ID 3 Steve Harris's date of birth was updated to April 14 1980.\n" +
+			"\t\tUser ID 33 Steve Harris's first name was updated to Eddie.\n" +
+			"\t\tUser ID 33 Steve Harris's last name was updated to T Head.\n" +
+			"\t\tUser ID 33 Steve Harris's date of birth was updated to April 14 1980.\n" +
+			"\t\tUser ID 333 Steve Harris's first name was updated to Eddie.\n" +
+			"\t\tUser ID 333 Steve Harris's last name was updated to T Head.\n" +
+			"\t\tUser ID 333 Steve Harris's date of birth was updated to April 14 1980.\n" +
+			"\t\tUser ID 3333 Steve Harris's first name was updated to Eddie.\n" +
+			"\t\tUser ID 3333 Steve Harris's last name was updated to T Head.\n" +
+			"\t\tUser ID 3333 Steve Harris's date of birth was updated to April 14 1980.\n";
+
+		let userArray: User[] = [];
+		for (let i: number = 1; i < 1112; i = i * 10 + 1) {
+			userArray.push({
+				id: i,
+				firstName: "Jack",
+				lastName: "Daniels",
+				birthDate: new Date("1999-1-1"),
+			});
+		}
+		results.push({
+			type: "success",
+			searchQuery: {
+				params: "fullName",
+				query: "Jack Daniels",
+			},
+			operationalQueries: [
+				{ params: "firstName", query: "Gentleman Jack" },
+				{ params: "lastName", query: "Reserved" },
+				{ params: "birthDate", query: new Date("1998-9-30").toString() },
+			],
+			users: userArray,
+		});
+		userArray = [];
+		for (let i: number = 2; i < 2223; i = i * 10 + 2) {
+			userArray.push({
+				id: i,
+				firstName: "Jim",
+				lastName: "Bean",
+				birthDate: new Date("1999-01-01"),
+			});
+		}
+		results.push({
+			type: "success",
+			searchQuery: {
+				params: "birthDate",
+				query: new Date("1977-9-12").toString(),
+			},
+			operationalQueries: [
+				{ params: "firstName", query: "James" },
+				{ params: "lastName", query: "McCallister" },
+				{ params: "birthDate", query: new Date("1989-11-2").toString() },
+			],
+			users: userArray,
+		});
+		userArray = [];
+		for (let i: number = 3; i < 3334; i = i * 10 + 3) {
+			userArray.push({
+				id: i,
+				firstName: "Steve",
+				lastName: "Harris",
+				birthDate: new Date("1999-01-01"),
+			});
+		}
+		results.push({
+			type: "success",
+			searchQuery: {
+				params: "lastName",
+				query: "Harris",
+			},
+			operationalQueries: [
+				{ params: "firstName", query: "Eddie" },
+				{ params: "lastName", query: "T Head" },
+				{ params: "birthDate", query: new Date("1980-4-14").toString() },
+			],
+			users: userArray,
+		});
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return update success message for 10 Users", () => {
+		message =
+			"Successfully updated 10 Users:\n" +
+			"The following Users were updated:\n" +
+			"\tUser with full name Jim Bean had the following fields updated:\n" +
+			"\t\tUser ID 1 Jim Bean's first name was updated to James.\n" +
+			"\t\tUser ID 1 Jim Bean's last name was updated to Bean Jr.\n" +
+			"\tUsers with first name Julio had the following field updated:\n" +
+			"\t\tUser ID 2 Julio Limon's first name was updated to Don Julio.\n" +
+			"\t\tUser ID 23 Julio Bacardi's first name was updated to Don Julio.\n" +
+			"\tUser with last name Walker had the following fields updated:\n" +
+			"\t\tUser ID 3 John Walker's first name was updated to Johnnie.\n" +
+			"\t\tUser ID 3 John Walker's last name was updated to Walker Green.\n" +
+			"\tUser with date of birth October 25 1999 had the following fields updated:\n" +
+			"\t\tUser ID 4 Jose Cuervo's first name was updated to Jose.\n" +
+			"\t\tUser ID 4 Jose Cuervo's last name was updated to Cuervo.\n" +
+			"\t\tUser ID 4 Jose Cuervo's date of birth was updated to October 26 1999.\n" +
+			"\tUser with full name Jack Daniels had the following fields updated:\n" +
+			"\t\tUser ID 5 Jack Daniels's first name was updated to Gentleman Jack.\n" +
+			"\t\tUser ID 5 Jack Daniels's last name was updated to Daniels Reserved.\n" +
+			"\tUser with first name Captain had the following field updated:\n" +
+			"\t\tUser ID 6 Captain Morgan's first name was updated to Comodore.\n" +
+			"\tUser with last name Buchannan had the following fields updated:\n" +
+			"\t\tUser ID 7 James Buchannan's first name was updated to William.\n" +
+			"\t\tUser ID 7 James Buchannan's last name was updated to Lawson.\n" +
+			"\tUser with last name Regal had the following fields updated:\n" +
+			"\t\tUser ID 8 Chivas Regal's first name was updated to Royal.\n" +
+			"\t\tUser ID 8 Chivas Regal's last name was updated to Salute.\n" +
+			"\tUser with date of birth August 31 2002 had the following fields updated:\n" +
+			"\t\tUser ID 9 Courvoisier VS's first name was updated to Courvoisier.\n" +
+			"\t\tUser ID 9 Courvoisier VS's last name was updated to XO.\n" +
+			"\t\tUser ID 9 Courvoisier VS's date of birth was updated to November 20 1988.\n";
+		results = [
+			{
+				type: "success",
+				searchQuery: {
+					params: "fullName",
+					query: "Jim Bean",
+				},
+				operationalQueries: [
+					{ params: "firstName", query: "James" },
+					{ params: "lastName", query: "Bean Jr" },
+				],
+				users: [
+					{
+						id: 1,
+						firstName: "Jim",
+						lastName: "Bean",
+						birthDate: new Date("1999-01-01"),
+					},
+				],
+			},
+			{
+				type: "success",
+				searchQuery: {
+					params: "firstName",
+					query: "Julio",
+				},
+				operationalQueries: [{ params: "firstName", query: "Don Julio" }],
+				users: [
+					{
+						id: 2,
+						firstName: "Julio",
+						lastName: "Limon",
+						birthDate: new Date("1999-01-01"),
+					},
+					{
+						id: 23,
+						firstName: "Julio",
+						lastName: "Bacardi",
+						birthDate: new Date("1999-01-01"),
+					},
+				],
+			},
+			{
+				type: "success",
+				searchQuery: {
+					params: "lastName",
+					query: "Walker",
+				},
+				operationalQueries: [
+					{ params: "firstName", query: "Johnnie" },
+					{ params: "lastName", query: "Walker Green" },
+				],
+				users: [
+					{
+						id: 3,
+						firstName: "John",
+						lastName: "Walker",
+						birthDate: new Date("1999-01-01"),
+					},
+				],
+			},
+			{
+				type: "success",
+				searchQuery: {
+					params: "birthDate",
+					query: new Date("1999-10-26").toString(),
+				},
+				operationalQueries: [
+					{ params: "firstName", query: "Jose" },
+					{ params: "lastName", query: "Cuervo" },
+					{ params: "birthDate", query: new Date("1999-10-27").toString() },
+				],
+				users: [
+					{
+						id: 4,
+						firstName: "Jose",
+						lastName: "Cuervo",
+						birthDate: new Date("1999-01-01"),
+					},
+				],
+			},
+			{
+				type: "success",
+				searchQuery: {
+					params: "fullName",
+					query: "Jack Daniels",
+				},
+				operationalQueries: [
+					{ params: "firstName", query: "Gentleman Jack" },
+					{ params: "lastName", query: "Daniels Reserved" },
+				],
+				users: [
+					{
+						id: 5,
+						firstName: "Jack",
+						lastName: "Daniels",
+						birthDate: new Date("1999-01-01"),
+					},
+				],
+			},
+			{
+				type: "success",
+				searchQuery: {
+					params: "firstName",
+					query: "Captain",
+				},
+				operationalQueries: [{ params: "firstName", query: "Comodore" }],
+				users: [
+					{
+						id: 6,
+						firstName: "Captain",
+						lastName: "Morgan",
+						birthDate: new Date("1999-01-01"),
+					},
+				],
+			},
+			{
+				type: "success",
+				searchQuery: {
+					params: "lastName",
+					query: "Buchannan",
+				},
+				operationalQueries: [
+					{ params: "firstName", query: "William" },
+					{ params: "lastName", query: "Lawson" },
+				],
+				users: [
+					{
+						id: 7,
+						firstName: "James",
+						lastName: "Buchannan",
+						birthDate: new Date("1999-01-01"),
+					},
+				],
+			},
+			{
+				type: "success",
+				searchQuery: {
+					params: "lastName",
+					query: "Regal",
+				},
+				operationalQueries: [
+					{ params: "firstName", query: "Royal" },
+					{ params: "lastName", query: "Salute" },
+				],
+				users: [
+					{
+						id: 8,
+						firstName: "Chivas",
+						lastName: "Regal",
+						birthDate: new Date("1999-01-01"),
+					},
+				],
+			},
+			{
+				type: "success",
+				searchQuery: {
+					params: "birthDate",
+					query: new Date("2002-8-31").toString(),
+				},
+				operationalQueries: [
+					{ params: "firstName", query: "Courvoisier" },
+					{ params: "lastName", query: "XO" },
+					{ params: "birthDate", query: new Date("1988-11-21").toString() },
+				],
+				users: [
+					{
+						id: 9,
+						firstName: "Courvoisier",
+						lastName: "VS",
+						birthDate: new Date("1999-01-01"),
+					},
+				],
+			},
+		];
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
 });

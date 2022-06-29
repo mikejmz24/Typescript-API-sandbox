@@ -26,49 +26,147 @@ export function bulkMessage(
 	operation: string
 ): string {
 	let res: string = "I'm error";
-	let operationQueryDetails: string = "";
-	let userList: string = "";
+	let bulkQuery: BulkQueries = newBulkQuery();
+	bulkQuery.operation = operation;
 	let result: BulkMessageResult[] = [];
-	const q: Quantum = getQuantum(results.length);
 	if (results.length == 0) {
 		return "";
 	}
 	results.forEach((bulkParam: BulkParamsV3) => {
+		bulkQuery.bulkParam = bulkParam;
 		if (bulkParam.users.length == 0) {
 		}
 		bulkParam.users.forEach((user: User) => {
+			bulkQuery.user = user;
 			bulkParam.operationalQueries.forEach((query: Query) => {
-				// Process Queries here...
+				bulkQuery.operationQueries += OperationalQueryDetails[bulkParam.type](
+					user,
+					query,
+					operation
+				);
 			});
-			if (bulkParam.operationalQueries.length == 0) {
-				switch (bulkParam.type) {
-					case "success":
-						userList += `\tID ${user.id} ${user.firstName} ${user.lastName}.\n`;
-						result.push({ type: bulkParam.type, userList: userList });
-						break;
-					default:
-						break;
-				}
-			}
+			bulkParam.operationalQueries.length == 0
+				? (bulkQuery.userList += UserList[bulkParam.type](bulkQuery))
+				: (bulkQuery.userList = UserList[bulkParam.type](bulkQuery));
 		});
+		result.push({ type: bulkParam.type, userList: bulkQuery.userList });
+		bulkQuery.userList = "";
+		bulkQuery.operationQueries = "";
 	});
-	const successCases: BulkMessageResult[] = result.filter(
-		(item: BulkMessageResult) => item.type == "success"
-	);
-	if (successCases.length > 0) {
-		res =
-			`Successfully ${operation}d ${successCases.length} ${q.pronoun}:\n` +
-			`The following ${q.pronoun} ${q.verb} ${operation}d:\n` +
-			`${successCases.reduce((acc: string, item: BulkMessageResult) => {
-				return acc + item.userList;
-			}, "")}`;
-	}
+	res = processMessage(result, operation);
 	return res;
+}
+
+interface BulkQueries {
+	bulkParam: BulkParamsV3;
+	user: User;
+	userList: string;
+	operation: string;
+	operationQueries: string;
+}
+
+function newBulkQuery(): BulkQueries {
+	return {
+		bulkParam: {
+			type: "",
+			searchQuery: { query: "", params: "" },
+			operationalQueries: [],
+			users: [],
+		},
+		user: {
+			id: 0,
+			firstName: "",
+			lastName: "",
+			birthDate: new Date(),
+		},
+		userList: "",
+		operation: "",
+		operationQueries: "",
+	};
 }
 
 interface BulkMessageResult {
 	type: string;
 	userList: string;
+}
+
+const UserList: { [key: string]: any } = {
+	success: (bulkQuery: BulkQueries) => {
+		if (bulkQuery.bulkParam.operationalQueries.length == 0) {
+			return `\tID ${bulkQuery.user.id} ${bulkQuery.user.firstName} ${bulkQuery.user.lastName}.\n`;
+		} else {
+			const q: Quantum = getQuantum(bulkQuery.bulkParam.users.length);
+			const qu: Quantum = getQuantum(
+				bulkQuery.bulkParam.operationalQueries.length
+			);
+			return (
+				`\t${q.pronoun} with ${formatQueryParamsComplete(
+					bulkQuery.bulkParam.searchQuery
+				)} had the following ${qu.field} ${bulkQuery.operation}d:\n` +
+				bulkQuery.operationQueries
+			);
+		}
+	},
+};
+
+const OperationalQueryDetails: { [key: string]: any } = {
+	success: (user: User, query: Query, operation: string) => {
+		query.query = dateFormat(query.query);
+		return `\t\tUser ID ${user.id} ${user.firstName} ${
+			user.lastName
+		}'s ${formatQueryParamShort(query)} was ${operation}d to ${query.query}.\n`;
+	},
+};
+
+function processMessage(
+	results: BulkMessageResult[],
+	operation: string
+): string {
+	const q: Quantum = getQuantum(results.length);
+	const successCases: BulkMessageResult[] = getCases(results, "success");
+	const successUsers: number = getSuccessCases(getUserList(successCases));
+	const failedCases: BulkMessageResult[] = getCases(results, "fail");
+	const errorCases: BulkMessageResult[] = getCases(results, "error");
+	let message: string = "";
+	if (successCases.length > 0) {
+		message =
+			`Successfully ${operation}d ${successUsers} ${q.pronoun}:\n` +
+			`The following ${q.pronoun} ${q.verb} ${operation}d:\n` +
+			`${getUserList(successCases)}`;
+	}
+	if (failedCases.length > 0) {
+		message +=
+			`The following ${q.pronoun} could not be ${operation}d:\n` +
+			`${getUserList(failedCases)}` +
+			`${getUserList(errorCases)}`;
+	}
+	return message;
+}
+
+function getSuccessCases(list: string): number {
+	return Object.keys(
+		(list.match(/(?<=D\s+).*?(?=\s+\D)/g) || []).reduce(
+			(accumulator: object, item: string) => (
+				(accumulator[item] = accumulator[item] + 1 || 1), accumulator
+			),
+			{}
+		)
+	).length;
+}
+
+function getCases(
+	bulkMessageResults: BulkMessageResult[],
+	type: string
+): BulkMessageResult[] {
+	return bulkMessageResults.filter(
+		(item: BulkMessageResult) => item.type == type
+	);
+}
+
+function getUserList(list: BulkMessageResult[]): string {
+	return `${list.reduce((acc: string, item: BulkMessageResult) => {
+		return acc + item.userList;
+	}, "")}`;
 }
 
 export function successHeading(
@@ -111,46 +209,6 @@ export function successPredicate(
 	});
 	return `The following ${q.pronoun} ${q.verb} ${operation}d:\n` + userList;
 }
-
-// export function successPredicate(
-// 	success: BulkParamsV2[],
-// 	operation: string
-// ): string {
-// 	const q: Quantum = getQuantum(success.length);
-// 	if (success.length == 0) {
-// 		return "";
-// 	}
-// 	return (
-// 		`The following ${q.pronoun} ${q.verb} ${operation}d:\n` +
-// 		success.reduce((accumulator: string, bulkParam: BulkParamsV2) => {
-// 			return (
-// 				accumulator +
-// 				bulkParam.users.reduce((accumulator: string, user: User) => {
-// 					if (bulkParam.operationalQueries.length == 0) {
-// 						return (
-// 							accumulator +
-// 							`\tID ${user.id} ${user.firstName} ${user.lastName}.\n`
-// 						);
-// 					} else {
-// 						return (
-// 							accumulator +
-// 							longQueryFormat(
-// 								bulkParam,
-// 								operation,
-// 								bulkParam.operationalQueries.reduce(
-// 									(accumulator: string, query: Query) => {
-// 										return accumulator + shortQueryFormat(query, operation);
-// 									},
-// 									""
-// 								)
-// 							)
-// 						);
-// 					}
-// 				}, "")
-// 			);
-// 		}, "")
-// 	);
-// }
 
 export function failedPredicate(
 	failed: BulkParamsV2[],
