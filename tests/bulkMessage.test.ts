@@ -1399,4 +1399,589 @@ describe("bulkMessage returns a descriptive message of the bulk operation perfor
 		operation = "update";
 		expect(bulkMessage(results, operation)).toBe(message);
 	});
+	it("Should return a failed delete message for 1 User", () => {
+		message =
+			"The following User could not be deleted:\n" +
+			"\tUser with full name James Buchannan.\n";
+		results = [
+			{
+				type: "fail",
+				searchQuery: { params: "fullName", query: "James Buchannan" },
+				operationalQueries: [],
+				users: [],
+			},
+		];
+		operation = "delete";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a failed delete message for 4 Users", () => {
+		message =
+			"The following Users could not be deleted:\n" +
+			"\tUser with full name James Buchannan.\n" +
+			"\tUser with first name Jim.\n" +
+			"\tUser with last name Glenfiddich.\n" +
+			"\tUser with date of birth June 10 1990.\n";
+		results = [
+			{
+				type: "fail",
+				searchQuery: { params: "fullName", query: "James Buchannan" },
+				operationalQueries: [],
+				users: [],
+			},
+			{
+				type: "fail",
+				searchQuery: { params: "firstName", query: "Jim" },
+				operationalQueries: [],
+				users: [],
+			},
+			{
+				type: "fail",
+				searchQuery: { params: "lastName", query: "Glenfiddich" },
+				operationalQueries: [],
+				users: [],
+			},
+			{
+				type: "fail",
+				searchQuery: {
+					params: "birthDate",
+					query: new Date("1990-6-10").toString(),
+				},
+				operationalQueries: [],
+				users: [],
+			},
+		];
+		operation = "delete";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a failed update message for 1 User", () => {
+		message =
+			"The following User could not be updated:\n" +
+			"\tUser with full name Jose Cuervo had the following incident:\n" +
+			"\t\tdate of birth could not be updated to January 23 1989.\n";
+		results = [
+			{
+				type: "fail",
+				searchQuery: { params: "fullName", query: "Jose Cuervo" },
+				operationalQueries: [
+					{ params: "birthDate", query: new Date("1989-1-23").toString() },
+				],
+				users: [],
+			},
+		];
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a failed update message for 4 Users", () => {
+		message =
+			"The following Users could not be updated:\n" +
+			"\tUser with full name Jose Cuervo had the following incidents:\n" +
+			"\t\tfirst name could not be updated to Don.\n" +
+			"\t\tlast name could not be updated to Julio.\n" +
+			"\tUser with first name Jack had the following incident:\n" +
+			"\t\tfirst name could not be updated to Jackinton.\n" +
+			"\tUser with last name Morgan had the following incident:\n" +
+			"\t\tlast name could not be updated to Kraken.\n" +
+			"\tUser with date of birth September 10 1999 had the following incident:\n" +
+			"\t\tdate of birth could not be updated to July 17 1998.\n";
+		results = [
+			{
+				type: "fail",
+				searchQuery: { params: "fullName", query: "Jose Cuervo" },
+				operationalQueries: [
+					{ params: "firstName", query: "Don" },
+					{ params: "lastName", query: "Julio" },
+				],
+				users: [],
+			},
+			{
+				type: "fail",
+				searchQuery: { params: "firstName", query: "Jack" },
+				operationalQueries: [{ params: "firstName", query: "Jackinton" }],
+				users: [],
+			},
+			{
+				type: "fail",
+				searchQuery: { params: "lastName", query: "Morgan" },
+				operationalQueries: [{ params: "lastName", query: "Kraken" }],
+				users: [],
+			},
+			{
+				type: "fail",
+				searchQuery: {
+					params: "birthDate",
+					query: new Date("1999-9-10").toString(),
+				},
+				operationalQueries: [
+					{ params: "birthDate", query: new Date("1998-7-17").toString() },
+				],
+				users: [],
+			},
+		];
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return an error message for 1 User", () => {
+		message =
+			"The following User could not be updated:\n" +
+			"\tUser with full name Jim Bean does not have the following field:\n" +
+			"\t\tNumber of Distilleries.\n";
+		results = [
+			{
+				type: "error",
+				searchQuery: { params: "fullName", query: "Jim Bean" },
+				operationalQueries: [{ params: "Number of Distilleries", query: "12" }],
+				users: [],
+			},
+		];
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return an error message for 4 Users", () => {
+		message =
+			"The following Users could not be updated:\n" +
+			"\tUser with full name Jim Bean does not have the following fields:\n" +
+			"\t\tNumber of pets.\n" +
+			"\t\tNumber of children.\n" +
+			"\tUser with first name Jack does not have the following field:\n" +
+			"\t\tFavorite color.\n" +
+			"\tUser with last name Rittenhouse does not have the following field:\n" +
+			"\t\tTeam alliance.\n" +
+			"\tUser with date of birth March 10 1973 does not have the following field:\n" +
+			"\t\tYears of service.\n";
+		results = [
+			{
+				type: "error",
+				searchQuery: { params: "fullName", query: "Jim Bean" },
+				operationalQueries: [
+					{ params: "Number of pets", query: "2" },
+					{ params: "Number of children", query: "0" },
+				],
+				users: [],
+			},
+			{
+				type: "error",
+				searchQuery: { params: "firstName", query: "Jack" },
+				operationalQueries: [{ params: "Favorite color", query: "Green" }],
+				users: [],
+			},
+			{
+				type: "error",
+				searchQuery: { params: "lastName", query: "Rittenhouse" },
+				operationalQueries: [
+					{ params: "Team alliance", query: "Pittsburgh Steelers" },
+				],
+				users: [],
+			},
+			{
+				type: "error",
+				searchQuery: {
+					params: "birthDate",
+					query: new Date("1973-3-10").toString(),
+				},
+				operationalQueries: [{ params: "Years of service", query: "43" }],
+				users: [],
+			},
+		];
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a success delete message for 1 User and a fail delete message for 1 User", () => {
+		message =
+			"Successfully deleted 1 User:\n" +
+			"The following User was deleted:\n" +
+			"\tID 1 Jack Daniels.\n" +
+			"The following User could not be deleted:\n" +
+			"\tUser with full name Chivas Regal.\n";
+		results = [
+			{
+				type: "success",
+				searchQuery: { params: "fullName", query: "Jack Daniels" },
+				operationalQueries: [],
+				users: [
+					{
+						id: 1,
+						firstName: "Jack",
+						lastName: "Daniels",
+						birthDate: new Date(),
+					},
+				],
+			},
+			{
+				type: "fail",
+				searchQuery: { params: "fullName", query: "Chivas Regal" },
+				operationalQueries: [],
+				users: [],
+			},
+		];
+		operation = "delete";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a success delete message for 100 Users and a fail delete message for 100 Users", () => {
+		let successUsers: string = "";
+		let failedUsers: string = "";
+		for (let i: number = 1; i < 101; i++) {
+			successUsers += `\tID ${i} Jack Daniels.\n`;
+			failedUsers += `\tUser with full name Chivas Regal.\n`;
+			results.push({
+				type: "success",
+				searchQuery: { params: "fullName", query: "Jack Daniels" },
+				operationalQueries: [],
+				users: [
+					{
+						id: i,
+						firstName: "Jack",
+						lastName: "Daniels",
+						birthDate: new Date(),
+					},
+				],
+			});
+			results.push({
+				type: "fail",
+				searchQuery: { params: "fullName", query: "Chivas Regal" },
+				operationalQueries: [],
+				users: [],
+			});
+		}
+		message =
+			"Successfully deleted 100 Users:\n" +
+			"The following Users were deleted:\n" +
+			successUsers +
+			"The following Users could not be deleted:\n" +
+			failedUsers;
+		operation = "delete";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a success update message for 1 User and a fail message for 1 User", () => {
+		message =
+			"Successfully updated 1 User:\n" +
+			"The following User was updated:\n" +
+			"\tUser with full name Jim Bean had the following field updated:\n" +
+			"\t\tUser ID 1 Jim Bean's first name was updated to James.\n" +
+			"The following User could not be updated:\n" +
+			"\tUser with full name Don Julio had the following incident:\n" +
+			"\t\tfirst name could not be updated to Patron.\n";
+		results = [
+			{
+				type: "success",
+				searchQuery: { params: "fullName", query: "Jim Bean" },
+				operationalQueries: [{ params: "firstName", query: "James" }],
+				users: [
+					{
+						id: 1,
+						firstName: "Jim",
+						lastName: "Bean",
+						birthDate: new Date(),
+					},
+				],
+			},
+			{
+				type: "fail",
+				searchQuery: { params: "fullName", query: "Don Julio" },
+				operationalQueries: [{ params: "firstName", query: "Patron" }],
+				users: [],
+			},
+		];
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a success update message for 100 Users and a fail message for 100 Users", () => {
+		let successUsers: string = "";
+		let failedUsers: string = "";
+		let successArray: User[] = [];
+		let failedArray: BulkParamsV3[] = [];
+		for (let i: number = 1; i < 101; i++) {
+			successUsers += `\t\tUser ID ${i} Jim Bean's first name was updated to James.\n`;
+			failedUsers += `\tUser with full name Don Julio had the following incident:\n\t\tfirst name could not be updated to Patron.\n`;
+			successArray.push({
+				id: i,
+				firstName: "Jim",
+				lastName: "Bean",
+				birthDate: new Date(),
+			});
+			failedArray.push({
+				type: "fail",
+				searchQuery: { params: "fullName", query: "Don Julio" },
+				operationalQueries: [{ params: "firstName", query: "Patron" }],
+				users: [],
+			});
+		}
+		message =
+			"Successfully updated 100 Users:\n" +
+			"The following Users were updated:\n" +
+			"\tUsers with full name Jim Bean had the following field updated:\n" +
+			successUsers +
+			"The following Users could not be updated:\n" +
+			failedUsers;
+		results = [
+			{
+				type: "success",
+				searchQuery: { params: "fullName", query: "Jim Bean" },
+				operationalQueries: [{ params: "firstName", query: "James" }],
+				users: successArray,
+			},
+		];
+		results = results.concat(failedArray);
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a success update message for 1 User and an error message for 1 User", () => {
+		message =
+			"Successfully updated 1 User:\n" +
+			"The following User was updated:\n" +
+			"\tUser with full name Grey Goose had the following field updated:\n" +
+			"\t\tUser ID 1 Grey Goose's date of birth was updated to May 1 1991.\n" +
+			"The following User could not be updated:\n" +
+			"\tUser with last name Perignon does not have the following field:\n" +
+			"\t\tFavorite vacation spot.\n";
+		results = [
+			{
+				type: "success",
+				searchQuery: { params: "fullName", query: "Grey Goose" },
+				operationalQueries: [
+					{ params: "birthDate", query: new Date("1991-5-1").toString() },
+				],
+				users: [
+					{
+						id: 1,
+						firstName: "Grey",
+						lastName: "Goose",
+						birthDate: new Date(),
+					},
+				],
+			},
+			{
+				type: "error",
+				searchQuery: { params: "lastName", query: "Perignon" },
+				operationalQueries: [
+					{
+						params: "Favorite vacation spot",
+						query: "Hameau de Vertuelle, Louvois",
+					},
+				],
+				users: [],
+			},
+		];
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a success update message for 100 Users and an error message for 100 Users", () => {
+		let successUsers: string = "";
+		let errorUsers: string = "";
+		let successArray: User[] = [];
+		let errorArray: BulkParamsV3[] = [];
+		for (let i: number = 1; i < 101; i++) {
+			successUsers += `\t\tUser ID ${i} Grey Goose's date of birth was updated to May 1 1991.\n`;
+			errorUsers += `\tUser with last name Perignon does not have the following field:\n\t\tFavorite vacation spot.\n`;
+			successArray.push({
+				id: i,
+				firstName: "Grey",
+				lastName: "Goose",
+				birthDate: new Date(),
+			});
+			errorArray.push({
+				type: "error",
+				searchQuery: { params: "lastName", query: "Perignon" },
+				operationalQueries: [
+					{
+						params: "Favorite vacation spot",
+						query: "Hameau de Vertuelle, Louvois",
+					},
+				],
+				users: [],
+			});
+		}
+		message =
+			"Successfully updated 100 Users:\n" +
+			"The following Users were updated:\n" +
+			"\tUsers with full name Grey Goose had the following field updated:\n" +
+			successUsers +
+			"The following Users could not be updated:\n" +
+			errorUsers;
+		results = [
+			{
+				type: "success",
+				searchQuery: { params: "fullName", query: "Grey Goose" },
+				operationalQueries: [
+					{ params: "birthDate", query: new Date("1991-5-1").toString() },
+				],
+				users: successArray,
+			},
+		];
+		results = results.concat(errorArray);
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a fail update message for 1 User and an error message for 1 User", () => {
+		message =
+			"The following Users could not be updated:\n" +
+			"\tUser with last name Bulleit had the following incidents:\n" +
+			"\t\tfirst name could not be updated to Tom.\n" +
+			"\t\tdate of birth could not be updated to September 1 1830.\n" +
+			"\tUser with last name Smirnoff does not have the following field:\n" +
+			"\t\tFavorite cocktail.\n";
+		results = [
+			{
+				type: "fail",
+				searchQuery: { params: "lastName", query: "Bulleit" },
+				operationalQueries: [
+					{ params: "firstName", query: "Tom" },
+					{ params: "birthDate", query: new Date("1830-9-2").toString() },
+				],
+				users: [],
+			},
+			{
+				type: "error",
+				searchQuery: { params: "lastName", query: "Smirnoff" },
+				operationalQueries: [
+					{
+						params: "Favorite cocktail",
+						query: "Yorsh",
+					},
+				],
+				users: [],
+			},
+		];
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a fail update message for 100 Users and an error message for 100 Users", () => {
+		let failUsers: string = "";
+		let errorUsers: string = "";
+		let failArray: BulkParamsV3[] = [];
+		let errorArray: BulkParamsV3[] = [];
+		for (let i: number = 1; i < 101; i++) {
+			failUsers +=
+				"\tUser with last name Bulleit had the following incidents:\n\t\tfirst name could not be updated to Tom.\n\t\tdate of birth could not be updated to September 1 1830.\n";
+			errorUsers +=
+				"\tUser with last name Smirnoff does not have the following field:\n\t\tFavorite cocktail.\n";
+			failArray.push({
+				type: "fail",
+				searchQuery: { params: "lastName", query: "Bulleit" },
+				operationalQueries: [
+					{ params: "firstName", query: "Tom" },
+					{ params: "birthDate", query: new Date("1830-9-2").toString() },
+				],
+				users: [],
+			});
+			errorArray.push({
+				type: "error",
+				searchQuery: { params: "lastName", query: "Smirnoff" },
+				operationalQueries: [
+					{
+						params: "Favorite cocktail",
+						query: "Yorsh",
+					},
+				],
+				users: [],
+			});
+		}
+		message =
+			"The following Users could not be updated:\n" + failUsers + errorUsers;
+		results = results.concat(failArray);
+		results = results.concat(errorArray);
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a success update message for 1 User, fail update message for 1 User and an error update message for 1 User", () => {
+		message =
+			"Successfully updated 1 User:\n" +
+			"The following User was updated:\n" +
+			"\tUser with full name John Jameson had the following fields updated:\n" +
+			"\t\tUser ID 1 John Jameson's first name was updated to Johnny.\n" +
+			"\t\tUser ID 1 John Jameson's date of birth was updated to June 20 1988.\n" +
+			"The following Users could not be updated:\n" +
+			"\tUser with first name Captain had the following incident:\n" +
+			"\t\tfirst name could not be updated to Admiral.\n" +
+			"\tUser with last name Bacardi does not have the following field:\n" +
+			"\t\tFavorite band.\n";
+		results = [
+			{
+				type: "success",
+				searchQuery: { params: "fullName", query: "John Jameson" },
+				operationalQueries: [
+					{ params: "firstName", query: "Johnny" },
+					{ params: "birthDate", query: new Date("1988-6-20").toString() },
+				],
+				users: [
+					{
+						id: 1,
+						firstName: "John",
+						lastName: "Jameson",
+						birthDate: new Date(),
+					},
+				],
+			},
+			{
+				type: "fail",
+				searchQuery: { params: "firstName", query: "Captain" },
+				operationalQueries: [{ params: "firstName", query: "Admiral" }],
+				users: [],
+			},
+			{
+				type: "error",
+				searchQuery: { params: "lastName", query: "Bacardi" },
+				operationalQueries: [
+					{ params: "Favorite band", query: "Earth, Wind & Fire" },
+				],
+				users: [],
+			},
+		];
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
+	it("Should return a success update message for 100 Users, fail update message for 100 Users and an error update message for 100 Users", () => {
+		let successUsers: string = "";
+		let failedUsers: string = "";
+		let errorUsers: string = "";
+		let successArray: User[] = [];
+		let failedArray: BulkParamsV3[] = [];
+		let errorArray: BulkParamsV3[] = [];
+		for (let i: number = 1; i < 101; i++) {
+			successUsers += `\t\tUser ID ${i} John Jameson's first name was updated to Johnny.\n\t\tUser ID ${i} John Jameson's date of birth was updated to June 20 1988.\n`;
+			failedUsers += `\tUser with first name Captain had the following incident:\n\t\tfirst name could not be updated to Admiral.\n`;
+			errorUsers += `\tUser with last name Bacardi does not have the following field:\n\t\tFavorite band.\n`;
+			successArray.push({
+				id: i,
+				firstName: "John",
+				lastName: "Jameson",
+				birthDate: new Date(),
+			});
+			failedArray.push({
+				type: "fail",
+				searchQuery: { params: "firstName", query: "Captain" },
+				operationalQueries: [{ params: "firstName", query: "Admiral" }],
+				users: [],
+			});
+			errorArray.push({
+				type: "error",
+				searchQuery: { params: "lastName", query: "Bacardi" },
+				operationalQueries: [
+					{ params: "Favorite band", query: "Earth, Wind & Fire" },
+				],
+				users: [],
+			});
+		}
+		message =
+			"Successfully updated 100 Users:\n" +
+			"The following Users were updated:\n" +
+			"\tUsers with full name John Jameson had the following fields updated:\n" +
+			successUsers +
+			"The following Users could not be updated:\n" +
+			failedUsers +
+			errorUsers;
+		results = [
+			{
+				type: "success",
+				searchQuery: { params: "fullName", query: "John Jameson" },
+				operationalQueries: [
+					{ params: "firstName", query: "Johnny" },
+					{ params: "birthDate", query: new Date("1988-6-20").toString() },
+				],
+				users: successArray,
+			},
+		];
+		results = results.concat(failedArray).concat(errorArray);
+		operation = "update";
+		expect(bulkMessage(results, operation)).toBe(message);
+	});
 });

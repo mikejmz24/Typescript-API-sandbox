@@ -34,21 +34,33 @@ export function bulkMessage(
 	}
 	results.forEach((bulkParam: BulkParamsV3) => {
 		bulkQuery.bulkParam = bulkParam;
+		const operationQueryParams: OperationQueryParams =
+			newOperationQueryParams(operation);
 		if (bulkParam.users.length == 0) {
-		}
-		bulkParam.users.forEach((user: User) => {
-			bulkQuery.user = user;
 			bulkParam.operationalQueries.forEach((query: Query) => {
-				bulkQuery.operationQueries += OperationalQueryDetails[bulkParam.type](
-					user,
-					query,
-					operation
-				);
+				operationQueryParams.query = query;
+				bulkQuery.operationQueries +=
+					OperationalQueryDetails[bulkParam.type](operationQueryParams);
 			});
+			// repeated code
 			bulkParam.operationalQueries.length == 0
 				? (bulkQuery.userList += UserList[bulkParam.type](bulkQuery))
 				: (bulkQuery.userList = UserList[bulkParam.type](bulkQuery));
-		});
+		} else {
+			bulkParam.users.forEach((user: User) => {
+				bulkQuery.user = user;
+				operationQueryParams.user = user;
+				bulkParam.operationalQueries.forEach((query: Query) => {
+					operationQueryParams.query = query;
+					bulkQuery.operationQueries +=
+						OperationalQueryDetails[bulkParam.type](operationQueryParams);
+				});
+				// repeated code
+				bulkParam.operationalQueries.length == 0
+					? (bulkQuery.userList += UserList[bulkParam.type](bulkQuery))
+					: (bulkQuery.userList = UserList[bulkParam.type](bulkQuery));
+			});
+		}
 		result.push({ type: bulkParam.type, userList: bulkQuery.userList });
 		bulkQuery.userList = "";
 		bulkQuery.operationQueries = "";
@@ -63,6 +75,25 @@ interface BulkQueries {
 	userList: string;
 	operation: string;
 	operationQueries: string;
+}
+
+interface OperationQueryParams {
+	user: User;
+	query: Query;
+	operation: string;
+}
+
+function newOperationQueryParams(operation: string): OperationQueryParams {
+	return {
+		user: {
+			id: 0,
+			firstName: "",
+			lastName: "",
+			birthDate: new Date(),
+		},
+		query: { params: "", query: "" },
+		operation: operation,
+	};
 }
 
 function newBulkQuery(): BulkQueries {
@@ -90,6 +121,26 @@ interface BulkMessageResult {
 	userList: string;
 }
 
+const OperationalQueryDetails: { [key: string]: any } = {
+	success: (O: OperationQueryParams) => {
+		O.query.query = dateFormat(O.query.query);
+		return `\t\tUser ID ${O.user.id} ${O.user.firstName} ${
+			O.user.lastName
+		}'s ${formatQueryParamShort(O.query)} was ${O.operation}d to ${
+			O.query.query
+		}.\n`;
+	},
+	fail: (O: OperationQueryParams) => {
+		O.query.query = dateFormat(O.query.query);
+		return `\t\t${formatQueryParamShort(O.query)} could not be ${
+			O.operation
+		}d to ${O.query.query}.\n`;
+	},
+	error: (O: OperationQueryParams) => {
+		return `\t\t${O.query.params}.\n`;
+	},
+};
+
 const UserList: { [key: string]: any } = {
 	success: (bulkQuery: BulkQueries) => {
 		if (bulkQuery.bulkParam.operationalQueries.length == 0) {
@@ -107,14 +158,34 @@ const UserList: { [key: string]: any } = {
 			);
 		}
 	},
-};
-
-const OperationalQueryDetails: { [key: string]: any } = {
-	success: (user: User, query: Query, operation: string) => {
-		query.query = dateFormat(query.query);
-		return `\t\tUser ID ${user.id} ${user.firstName} ${
-			user.lastName
-		}'s ${formatQueryParamShort(query)} was ${operation}d to ${query.query}.\n`;
+	fail: (bulkQuery: BulkQueries) => {
+		if (bulkQuery.bulkParam.operationalQueries.length == 0) {
+			const q: Quantum = getQuantum(
+				bulkQuery.bulkParam.operationalQueries.length
+			);
+			return `\tUser with ${formatQueryParamsComplete(
+				bulkQuery.bulkParam.searchQuery
+			)}.\n`;
+		} else {
+			const q: Quantum = getQuantum(
+				bulkQuery.bulkParam.operationalQueries.length
+			);
+			return (
+				`\tUser with ${formatQueryParamsComplete(
+					bulkQuery.bulkParam.searchQuery
+				)} had the following ${q.incident}:\n` + bulkQuery.operationQueries
+			);
+		}
+	},
+	error: (bulkQuery: BulkQueries) => {
+		const q: Quantum = getQuantum(
+			bulkQuery.bulkParam.operationalQueries.length
+		);
+		return (
+			`\tUser with ${formatQueryParamsComplete(
+				bulkQuery.bulkParam.searchQuery
+			)} does not have the following ${q.field}:\n` + bulkQuery.operationQueries
+		);
 	},
 };
 
@@ -122,11 +193,12 @@ function processMessage(
 	results: BulkMessageResult[],
 	operation: string
 ): string {
-	const q: Quantum = getQuantum(results.length);
 	const successCases: BulkMessageResult[] = getCases(results, "success");
 	const successUsers: number = getSuccessCases(getUserList(successCases));
 	const failedCases: BulkMessageResult[] = getCases(results, "fail");
 	const errorCases: BulkMessageResult[] = getCases(results, "error");
+	const q: Quantum = getQuantum(successUsers);
+	const qu: Quantum = getQuantum(failedCases.length + errorCases.length);
 	let message: string = "";
 	if (successCases.length > 0) {
 		message =
@@ -134,9 +206,9 @@ function processMessage(
 			`The following ${q.pronoun} ${q.verb} ${operation}d:\n` +
 			`${getUserList(successCases)}`;
 	}
-	if (failedCases.length > 0) {
+	if (failedCases.length > 0 || errorCases.length > 0) {
 		message +=
-			`The following ${q.pronoun} could not be ${operation}d:\n` +
+			`The following ${qu.pronoun} could not be ${operation}d:\n` +
 			`${getUserList(failedCases)}` +
 			`${getUserList(errorCases)}`;
 	}
