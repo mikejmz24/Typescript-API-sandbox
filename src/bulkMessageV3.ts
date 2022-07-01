@@ -14,54 +14,6 @@ export interface BulkParamsV3 {
 	users: User[];
 }
 
-export function bulkMessage(
-	results: BulkParamsV3[],
-	operation: string
-): string {
-	let res: string = "I'm error";
-	let bulkQuery: BulkQueries = newBulkQuery();
-	bulkQuery.operation = operation;
-	let result: BulkMessageResult[] = [];
-	if (results.length == 0) {
-		return "";
-	}
-	results.forEach((bulkParam: BulkParamsV3) => {
-		bulkQuery.bulkParam = bulkParam;
-		const operationQueryParams: OperationQueryParams =
-			newOperationQueryParams(operation);
-		if (bulkParam.users.length == 0) {
-			bulkParam.operationalQueries.forEach((query: Query) => {
-				operationQueryParams.query = query;
-				bulkQuery.operationQueries +=
-					OperationalQueryDetails[bulkParam.type](operationQueryParams);
-			});
-			// repeated code
-			bulkParam.operationalQueries.length == 0
-				? (bulkQuery.userList += UserList[bulkParam.type](bulkQuery))
-				: (bulkQuery.userList = UserList[bulkParam.type](bulkQuery));
-		} else {
-			bulkParam.users.forEach((user: User) => {
-				bulkQuery.user = user;
-				operationQueryParams.user = user;
-				bulkParam.operationalQueries.forEach((query: Query) => {
-					operationQueryParams.query = query;
-					bulkQuery.operationQueries +=
-						OperationalQueryDetails[bulkParam.type](operationQueryParams);
-				});
-				// repeated code
-				bulkParam.operationalQueries.length == 0
-					? (bulkQuery.userList += UserList[bulkParam.type](bulkQuery))
-					: (bulkQuery.userList = UserList[bulkParam.type](bulkQuery));
-			});
-		}
-		result.push({ type: bulkParam.type, userList: bulkQuery.userList });
-		bulkQuery.userList = "";
-		bulkQuery.operationQueries = "";
-	});
-	res = processMessage(result, operation);
-	return res;
-}
-
 interface BulkQueries {
 	bulkParam: BulkParamsV3;
 	user: User;
@@ -76,61 +28,78 @@ interface OperationQueryParams {
 	operation: string;
 }
 
-function newOperationQueryParams(operation: string): OperationQueryParams {
-	return {
-		user: {
-			id: 0,
-			firstName: "",
-			lastName: "",
-			birthDate: new Date(),
-		},
-		query: { params: "", query: "" },
-		operation: operation,
-	};
-}
-
-function newBulkQuery(): BulkQueries {
-	return {
-		bulkParam: {
-			type: "",
-			searchQuery: { query: "", params: "" },
-			operationalQueries: [],
-			users: [],
-		},
-		user: {
-			id: 0,
-			firstName: "",
-			lastName: "",
-			birthDate: new Date(),
-		},
-		userList: "",
-		operation: "",
-		operationQueries: "",
-	};
-}
-
 interface BulkMessageResult {
 	type: string;
 	userList: string;
 }
 
+export function bulkMessage(
+	results: BulkParamsV3[],
+	operation: string
+): string {
+	const bulkQuery: BulkQueries = newBulkQuery(operation);
+	const bulkMessages: BulkMessageResult[] = [];
+	if (results.length == 0) {
+		return "";
+	}
+	results.forEach((bulkParam: BulkParamsV3) => {
+		bulkQuery.bulkParam = bulkParam;
+		if (bulkParam.users.length == 0) {
+			bulkQuery.operationQueries = processOperationalQueries(bulkQuery);
+			bulkQuery.userList = processUserList(bulkQuery);
+		} else {
+			bulkParam.users.forEach((user: User) => {
+				bulkQuery.user = user;
+				bulkQuery.operationQueries += processOperationalQueries(bulkQuery);
+				bulkQuery.userList = processUserList(bulkQuery);
+			});
+		}
+		bulkMessages.push(setBulkMessageResult(bulkQuery));
+		bulkQuery.userList = "";
+		bulkQuery.operationQueries = "";
+	});
+	return processMessage(bulkMessages, operation);
+}
+
+function processOperationalQueries(bulkQuery: BulkQueries): string {
+	const operationQueryParams: OperationQueryParams = newOperationQueryParams(
+		bulkQuery.operation
+	);
+	let message: string = "";
+	if (bulkQuery.user !== undefined) {
+		operationQueryParams.user = bulkQuery.user;
+	}
+	bulkQuery.bulkParam.operationalQueries.forEach((query: Query) => {
+		operationQueryParams.query = query;
+		message +=
+			OperationalQueryDetails[bulkQuery.bulkParam.type](operationQueryParams);
+	});
+	return message;
+}
+
+function processUserList(bulkQuery: BulkQueries): string {
+	return bulkQuery.bulkParam.operationalQueries.length == 0
+		? (bulkQuery.userList += UserList[bulkQuery.bulkParam.type](bulkQuery))
+		: (bulkQuery.userList = UserList[bulkQuery.bulkParam.type](bulkQuery));
+}
+
 const OperationalQueryDetails: { [key: string]: any } = {
-	success: (O: OperationQueryParams) => {
-		O.query.query = dateFormat(O.query.query);
-		return `\t\tUser ID ${O.user.id} ${O.user.firstName} ${
-			O.user.lastName
-		}'s ${formatQueryParamShort(O.query)} was ${O.operation}d to ${
-			O.query.query
+	success: (o: OperationQueryParams) => {
+		o.query.query = dateFormat(o.query.query);
+		return `\t\tUser ID ${o.user.id} ${o.user.firstName} ${
+			o.user.lastName
+		}'s ${formatQueryParamShort(o.query)} was ${o.operation}d to ${
+			o.query.query
 		}.\n`;
 	},
-	fail: (O: OperationQueryParams) => {
-		O.query.query = dateFormat(O.query.query);
-		return `\t\t${formatQueryParamShort(O.query)} could not be ${
-			O.operation
-		}d to ${O.query.query}.\n`;
+	fail: (o: OperationQueryParams) => {
+		o.query.query = dateFormat(o.query.query);
+		return `\t\t${formatQueryParamShort(o.query)} could not be ${
+			o.operation
+		}d to ${o.query.query}.\n`;
 	},
-	error: (O: OperationQueryParams) => {
-		return `\t\t${O.query.params}.\n`;
+	error: (o: OperationQueryParams) => {
+		return `\t\t${o.query.params}.\n`;
 	},
 };
 
@@ -153,9 +122,6 @@ const UserList: { [key: string]: any } = {
 	},
 	fail: (bulkQuery: BulkQueries) => {
 		if (bulkQuery.bulkParam.operationalQueries.length == 0) {
-			const q: Quantum = getQuantum(
-				bulkQuery.bulkParam.operationalQueries.length
-			);
 			return `\tUser with ${formatQueryParamsComplete(
 				bulkQuery.bulkParam.searchQuery
 			)}.\n`;
@@ -206,6 +172,43 @@ function processMessage(
 			`${getUserList(errorCases)}`;
 	}
 	return message;
+}
+
+function newOperationQueryParams(operation: string): OperationQueryParams {
+	return {
+		user: {
+			id: 0,
+			firstName: "",
+			lastName: "",
+			birthDate: new Date(),
+		},
+		query: { params: "", query: "" },
+		operation: operation,
+	};
+}
+
+function newBulkQuery(operation: string): BulkQueries {
+	return {
+		bulkParam: {
+			type: "",
+			searchQuery: { query: "", params: "" },
+			operationalQueries: [],
+			users: [],
+		},
+		user: {
+			id: 0,
+			firstName: "",
+			lastName: "",
+			birthDate: new Date(),
+		},
+		userList: "",
+		operation: operation,
+		operationQueries: "",
+	};
+}
+
+function setBulkMessageResult(bulkQuery: BulkQueries): BulkMessageResult {
+	return { type: bulkQuery.bulkParam.type, userList: bulkQuery.userList };
 }
 
 function getSuccessCases(list: string): number {
