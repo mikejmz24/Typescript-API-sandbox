@@ -615,6 +615,125 @@ describe("Update Bulk Operation suite", () => {
 
 		expect(bulkOperation(bulkParameters)).toEqual(result);
 	});
+	it("Should return 100 errors", () => {
+		const testQueries: BulkParams[] = [
+			{
+				searchQuery: { params: "fullName", query: "Jim Bean" },
+				operationQueries: [
+					{ params: "Number of pets", query: "1" },
+					{ params: "lastName", query: "Bean Sr" },
+				],
+			},
+			{
+				searchQuery: { params: "firstName", query: "William" },
+				operationQueries: [
+					{ params: "firstName", query: "Bill" },
+					{ params: "lastName", query: "Lawson Jr" },
+					{
+						params: "Favorite Whisky",
+						query: "Arran Robert Burns Single Malt Scotch Whisky",
+					},
+				],
+			},
+		];
+		for (let i: number = 0; i < 50; i++) {
+			testQueries.forEach((bulkParam: BulkParams) => {
+				bulkParameters.push({
+					type: "update",
+					searchQuery: bulkParam.searchQuery,
+					operationalQueries: bulkParam.operationQueries,
+					users: FindUser(bulkParam.searchQuery),
+				});
+				result.push({
+					type: "error",
+					searchQuery: bulkParam.searchQuery,
+					operationalQueries: bulkParam.operationQueries,
+					users: [],
+				});
+			});
+		}
+		expect(bulkOperation(bulkParameters)).toEqual(result);
+	});
+	it("Should return 3 errors, 1 for a non-existing User & 2 for 2 existing Users", () => {
+		const testQueries: BulkParams[] = [
+			{
+				searchQuery: { params: "fullName", query: "Jim Bean" },
+				operationQueries: [
+					{ params: "Number of pets", query: "1" },
+					{ params: "lastName", query: "Bean Sr" },
+				],
+			},
+			{
+				searchQuery: { params: "firstName", query: "William" },
+				operationQueries: [
+					{ params: "firstName", query: "Bill" },
+					{ params: "lastName", query: "Lawson Jr" },
+					{
+						params: "Favorite Whisky",
+						query: "Arran Robert Burns Single Malt Scotch Whisky",
+					},
+				],
+			},
+		];
+		CreateUser("William", "Lawson Sr", new Date());
+		CreateUser("William", "Lawson Jr", new Date());
+		testQueries.forEach((bulkParam: BulkParams) => {
+			bulkParameters.push({
+				type: "update",
+				searchQuery: bulkParam.searchQuery,
+				operationalQueries: bulkParam.operationQueries,
+				users: FindUser(bulkParam.searchQuery),
+			});
+			for (
+				let i: number = 0;
+				i <=
+				(FindUser(bulkParam.searchQuery).length == 0
+					? 0
+					: FindUser(bulkParam.searchQuery).length - 1);
+				i++
+			) {
+				result.push({
+					type: "error",
+					searchQuery: bulkParam.searchQuery,
+					operationalQueries: bulkParam.operationQueries,
+					users: [],
+				});
+			}
+		});
+
+		expect(bulkOperation(bulkParameters)).toEqual(result);
+	});
+	it("Should return 5 errors, 1 per user", () => {
+		const testQueries: BulkParams[] = [
+			{
+				searchQuery: { params: "fullName", query: "Jim Bean" },
+				operationQueries: [
+					{ params: "Number of distilleries", query: "12" },
+					{ params: "Favorite cocktail", query: "old-fashioned" },
+				],
+			},
+		];
+		for (let i: number = 0; i < 5; i++) {
+			CreateUser("Jim", "Bean", new Date());
+		}
+		bulkParameters = [
+			{
+				type: "update",
+				searchQuery: testQueries[0].searchQuery,
+				operationalQueries: testQueries[0].operationQueries,
+				users: FindUser(testQueries[0].searchQuery),
+			},
+		];
+		for (let i: number = 0; i < 5; i++) {
+			result.push({
+				type: "error",
+				searchQuery: testQueries[0].searchQuery,
+				operationalQueries: testQueries[0].operationQueries,
+				users: [],
+			});
+		}
+		expect(bulkOperation(bulkParameters)).toEqual(result);
+	});
 	it("Should return 1 fail update & 1 error", () => {
 		const testQueries: BulkParams[] = [
 			{
@@ -709,7 +828,7 @@ describe("Update Bulk Operation suite", () => {
 		}
 		expect(bulkOperation(bulkParameters)).toEqual(result);
 	});
-	it("Should return return 1 success & 1 fail", () => {
+	it("Should return 1 success & 1 fail", () => {
 		const testQueries: BulkParams[] = [
 			{
 				searchQuery: { params: "firstName", query: "Don Julio" },
@@ -753,7 +872,7 @@ describe("Update Bulk Operation suite", () => {
 		});
 		expect(bulkOperation(bulkParameters)).toEqual(result);
 	});
-	it("Should return return 1 success & 1 error", () => {
+	it("Should return 1 success & 1 error", () => {
 		const testQueries: BulkParams[] = [
 			{
 				searchQuery: { params: "firstName", query: "Don Julio" },
