@@ -1,5 +1,6 @@
 import { FindUser, User, DeleteUser, Query, UpdateUser } from "./api";
 import { BulkParamsV3 } from "./bulkMessageV3";
+import { getErrors } from "./utils";
 
 export function bulkOperation(bulkParams: BulkParamsV3[]): BulkParamsV3[] {
 	let res: BulkParamsV3[] = [];
@@ -68,10 +69,4 @@ function noUsersvalidation(bulkParam: BulkParamsV3): BulkParamsV3 {
 	let res: BulkParamsV3 = bulkParam;
 	errors.length == 0 ? (res.type = "fail") : (res.type = "error");
 	return res;
-}
-
-function getErrors(users: User[], bulkParam: BulkParamsV3): Query[] {
-	return bulkParam.operationalQueries.filter((query: Query) =>
-		users.find((user: User) => user[query.params] == undefined)
-	);
 }

@@ -2,7 +2,6 @@ import {
 	BulkParams,
 	ClearUsers,
 	CreateUser,
-	dateFormat,
 	FindUser,
 	Query,
 	User,
@@ -1149,3 +1148,4 @@ describe("Full integration test", () => {
 		expect(bulkOperation(bulkParameters)).toEqual(result);
 	});
 });
+
